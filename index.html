@@ -4,10 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Odoo Partner Qualification 360° — Formulario</title>
-  <!-- Tailwind para estilos rápidos -->
+  <!-- Tailwind (estilos) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- html2pdf para exportar -->
+  <!-- html2pdf (PDF) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+  <!-- SheetJS (Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     @media print { .no-print { display:none !important; } }
     tr.red-flag { background-color:#fee2e2; color:#991b1b; }
@@ -16,13 +18,20 @@
 <body class="bg-gray-50 text-slate-800">
   <!-- Encabezado -->
   <header class="bg-[#714B67] text-white p-4 shadow">
-    <h1 class="text-xl font-semibold">Odoo Partner Qualification 360° — Evaluación PR/PM</h1>
+    <div class="max-w-7xl mx-auto flex items-center gap-3">
+      <h1 class="text-xl font-semibold">Odoo Partner Qualification 360° — Evaluación PR/PM</h1>
+      <div class="ml-auto hidden md:flex items-center gap-2 text-sm">
+        <span>Tipo:</span><span id="badgeType" class="px-2 py-0.5 rounded bg-white/20">—</span>
+        <span>Total:</span><span id="badgeScore" class="px-2 py-0.5 rounded bg-white/20">—</span>
+        <span>RF:</span><span id="badgeRF" class="px-2 py-0.5 rounded bg-white/20">0</span>
+      </div>
+    </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 py-6">
     <!-- Info básica -->
     <section class="bg-white p-4 rounded-2xl shadow">
-      <div class="grid md:grid-cols-3 gap-4">
+      <div class="grid md:grid-cols-4 gap-4">
         <div>
           <label class="text-sm font-medium">Partner Name</label>
           <input id="partnerName" class="w-full border rounded px-2 py-1 mt-1" placeholder="Ej. ERP México" />
@@ -32,15 +41,21 @@
           <input id="partnerManager" class="w-full border rounded px-2 py-1 mt-1" placeholder="Ej. Alnu / Wanessa / Andrés" />
         </div>
         <div>
-          <label class="text-sm font-medium">Vista por rol</label>
-          <select id="roleFilter" class="w-full border rounded px-2 py-1 mt-1">
+          <label class="text-sm font-medium">Modo por rol (qué preguntas ver)</label>
+          <select id="roleMode" class="w-full border rounded px-2 py-1 mt-1">
             <option value="all">Ver todo</option>
-            <option value="Recruiter">Solo Recruiter</option>
-            <option value="PM">Solo Partner Manager</option>
+            <option value="Recruiter">Solo Recruiter + Compartidas</option>
+            <option value="PM">Solo PM + Compartidas</option>
           </select>
         </div>
+        <div>
+          <label class="text-sm font-medium">Búsqueda rápida</label>
+          <input id="searchBox" class="w-full border rounded px-2 py-1 mt-1" placeholder="Filtra por texto en la pregunta..." />
+        </div>
       </div>
-      <p class="mt-2 text-xs text-gray-500">El total se calcula con <em>pesos internos × Score 1–5</em>. Los evaluadores no ven los pesos.</p>
+      <p class="mt-2 text-xs text-gray-500">
+        El total se calcula con <em>pesos internos × Score 1–5</em>. Los evaluadores no ven los pesos.
+      </p>
     </section>
 
     <!-- Contenido dinámico -->
@@ -56,6 +71,7 @@
         </div>
         <div class="flex gap-2">
           <button id="btnClear" class="px-3 py-1 border rounded">Limpiar</button>
+          <button id="btnXLSX" class="px-3 py-1 border rounded">Descargar Excel</button>
           <button id="btnPDF" class="px-3 py-1 bg-[#714B67] text-white rounded">Descargar PDF</button>
         </div>
       </div>
@@ -80,6 +96,8 @@
             <th class="p-1 text-left">Bloque</th>
             <th class="p-1 text-left">Rol</th>
             <th class="p-1 text-left">Pregunta</th>
+            <th class="p-1 text-left">Guía</th>
+            <th class="p-1 text-left">Peso</th>
             <th class="p-1 text-left">Score</th>
             <th class="p-1 text-left">🚩</th>
             <th class="p-1 text-left">Comentarios</th>
@@ -92,8 +110,9 @@
 
   <script>
     // ================== Banco de Preguntas ==================
+    // Rol puede ser "Recruiter", "PM" o "Ambos" (compartidas)
     const QUESTIONS = [
-      // 0. Quick Profiling (Recruiter)
+      // 0. PR – Quick Profiling (Recruiter)
       ['PR – Quick Profiling','Recruiter','¿Por qué quieren ser Partner de Odoo?','1=Curiosidad · 3=Diversificar · 5=Plan estratégico',2.5],
       ['PR – Quick Profiling','Recruiter','¿Tienen equipo dedicado o solo el fundador?','1=Solo founder · 3=1–2 part-time · 5=2+ full-time',2.5],
       ['PR – Quick Profiling','Recruiter','¿Han considerado invertir en PLO / Success Pack / Certificación?','1=No · 3=En análisis · 5=Ya invirtieron',2.5],
@@ -105,38 +124,38 @@
       ['PR – Quick Profiling','Recruiter','¿Abiertos a reunión con PM (30–60–90)?','1=No · 3=Tal vez · 5=Sí',2.5],
       ['PR – Quick Profiling','Recruiter','¿Son end-customer o planean vender Community?','1=Community/end-customer · 3=Ambos · 5=Solo Enterprise',2.5],
 
-      // 1. Estructura & Equipo
+      // 1. Estructura & Equipo (compartidas)
       ['Estructura & Equipo','Ambos','¿Cuántas personas 100% dedicadas a Odoo?','1=1–2 · 3=3–4 · 5=5+',5],
       ['Estructura & Equipo','Ambos','¿Founder full-time en Odoo?','1=No · 3=Parcial · 5=Sí',5],
 
-      // 2. Comerciales
+      // 2. Comerciales (PM)
       ['Comerciales','PM','¿Pipeline activo Enterprise?','1=Ninguno · 3=1–3 · 5=5+',3.75],
       ['Comerciales','PM','¿Win rate últimos 12m?','1=<10% · 3=30% · 5=>50%',3.75],
       ['Comerciales','PM','¿Tienen equipo de ventas formal?','1=No · 3=1 parcial · 5=Equipo dedicado',3.75],
       ['Comerciales','PM','¿ICP o vertical definido?','1=No · 3=Parcial · 5=Claro',3.75],
 
-      // 3. Técnicas
+      // 3. Técnicas (PM)
       ['Técnicas','PM','¿Consultores certificados (últimas 3 versiones)?','1=0 · 3=1–2 · 5=3+',3.33],
       ['Técnicas','PM','¿Cobertura de módulos clave?','1=1 módulo · 3=3 módulos · 5=4+',3.33],
       ['Técnicas','PM','¿Usan Odoo.sh y QA/DevOps?','1=No · 3=Parcial · 5=Sí',3.33],
 
-      // 4. Delivery & Customer Success
+      // 4. Delivery & CS (PM)
       ['Delivery & CS','PM','¿Metodología de implementación?','1=Ad-hoc · 3=Semi · 5=Formalizada/ágil',2.5],
       ['Delivery & CS','PM','¿Time-to-first-value promedio?','1=>6m · 3=3–6m · 5=<3m',2.5],
       ['Delivery & CS','PM','¿Miden NPS/CSAT o casos de éxito?','1=No · 3=1–2 · 5=Sí',2.5],
       ['Delivery & CS','PM','¿Post-go-live (soporte/upsell)?','1=Reactivo · 3=Básico · 5=Proactivo/SLA',2.5],
 
-      // 5. Compromiso con Odoo
+      // 5. Compromiso con Odoo (PM)
       ['Compromiso','PM','¿Participan en trainings/webinars/eventos?','1=Nunca · 3=Ocasional · 5=Frecuente',1.66],
       ['Compromiso','PM','¿Han hecho co-sell o co-marketing?','1=No · 3=Piloto · 5=Sí',1.66],
       ['Compromiso','PM','¿Qué esperan de Odoo?','1=Leads gratis · 3=Soporte · 5=Alianza estratégica',1.66],
 
-      // 6. Clientes & Retención
+      // 6. Clientes & Retención (PM)
       ['Clientes & Retención','PM','¿Clientes activos Enterprise?','1=0 · 3=1–3 · 5=5+',1.66],
       ['Clientes & Retención','PM','¿Retention rate anual?','1=<70% · 3=80% · 5=>90%',1.66],
       ['Clientes & Retención','PM','¿Migraciones de Community a Enterprise?','1=Ninguna · 3=1–2 · 5=Recurrentes',1.66],
 
-      // 7. Riesgos & Alertas
+      // 7. Riesgos & Alertas (compartidas)
       ['Riesgos & Alertas','Ambos','¿Dependen de 1–2 clientes?','1=Sí (80%+) · 3=Parcial · 5=Diversificado',1.66],
       ['Riesgos & Alertas','Ambos','¿Rotación alta de talento (>15%)?','1=Alta · 3=Media · 5=Baja',1.66],
       ['Riesgos & Alertas','Ambos','¿Community-only o end-customer?','1=Sí · 3=Parcial · 5=No',1.66]
@@ -149,75 +168,196 @@
     Object.entries(grouped).forEach(([block,list])=>{
       const card=document.createElement('div');
       card.className='bg-white rounded-2xl shadow overflow-hidden';
-      card.innerHTML=`<div class="bg-gray-100 p-2 font-semibold">${block}</div><table class="w-full text-sm"><thead><tr class="bg-gray-50 text-gray-600"><th class="p-1">Rol</th><th class="p-1">Pregunta</th><th class="p-1">Guía</th><th class="p-1">Score</th><th class="p-1">🚩</th><th class="p-1">Comentarios</th></tr></thead><tbody></tbody></table>`;
+      card.innerHTML=`
+        <div class="bg-gray-100 p-2 font-semibold">${block}</div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 text-gray-600">
+              <th class="p-1 text-left">Rol</th>
+              <th class="p-1 text-left">Pregunta</th>
+              <th class="p-1 text-left">Guía</th>
+              <th class="p-1 text-left">Score</th>
+              <th class="p-1 text-left">🚩</th>
+              <th class="p-1 text-left">Comentarios</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>`;
       const tb=card.querySelector('tbody');
       list.forEach(([role,q,guide,weight])=>{
         qIndex++;
         const tr=document.createElement('tr');
-        tr.dataset.role=role; tr.dataset.weight=weight;
+        tr.dataset.role=role; tr.dataset.weight=weight; tr.dataset.block=block;
         tr.innerHTML=`
           <td class="p-1">${role}</td>
-          <td class="p-1">${q}</td>
+          <td class="p-1 question-text">${q}</td>
           <td class="p-1 text-xs text-gray-500">${guide}</td>
-          <td class="p-1"><select id="s${qIndex}" class="border rounded px-1 py-0.5 text-sm"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option>${n}</option>`).join('')}</select></td>
+          <td class="p-1">
+            <select id="s${qIndex}" class="border rounded px-1 py-0.5 text-sm">
+              <option value="">—</option>${[1,2,3,4,5].map(n=>`<option>${n}</option>`).join('')}
+            </select>
+          </td>
           <td class="p-1 text-center"><input id="rf${qIndex}" type="checkbox"></td>
-          <td class="p-1"><textarea id="d${qIndex}" rows="1" class="w-full border rounded text-xs px-1"></textarea></td>`;
+          <td class="p-1"><textarea id="d${qIndex}" rows="1" class="w-full border rounded text-xs px-1" placeholder="Detalles..."></textarea></td>`;
         tb.appendChild(tr);
       });
       formRoot.appendChild(card);
     });
 
-    // =============== Lógica de cálculo ===============
-    const roleFilter=document.getElementById('roleFilter');
-    roleFilter.addEventListener('change',()=>{
-      document.querySelectorAll('#formRoot tr').forEach(tr=>{
-        tr.classList.toggle('hidden', roleFilter.value!=='all' && tr.dataset.role!==roleFilter.value);
-      });
-    });
+    // =============== Filtros: Modo por rol + búsqueda ===============
+    const roleMode=document.getElementById('roleMode');
+    const searchBox=document.getElementById('searchBox');
 
+    function applyFilters(){
+      const mode = roleMode.value; // 'all' | 'Recruiter' | 'PM'
+      const q = (searchBox.value || '').toLowerCase();
+      document.querySelectorAll('#formRoot tbody tr').forEach(tr=>{
+        const role = tr.dataset.role;
+        const text = tr.querySelector('.question-text').innerText.toLowerCase();
+        const roleOk = (mode==='all') ||
+                       (mode==='Recruiter' && (role==='Recruiter' || role==='Ambos')) ||
+                       (mode==='PM' && (role==='PM' || role==='Ambos'));
+        const textOk = q==='' || text.includes(q);
+        tr.classList.toggle('hidden', !(roleOk && textOk));
+      });
+    }
+    roleMode.addEventListener('change', applyFilters);
+    searchBox.addEventListener('input', applyFilters);
+
+    // =============== Scoring y clasificación ===============
     function classify(total){
-      if(total>=4.3) return ['Strategic','bg-green-100'];
-      if(total>=3.6) return ['Growth','bg-blue-100'];
-      if(total>=2.9) return ['Active','bg-yellow-100'];
-      return ['Low Fit','bg-red-100'];
+      if(total>=4.3) return ['Strategic','bg-green-100 text-green-800'];
+      if(total>=3.6) return ['Growth','bg-blue-100 text-blue-800'];
+      if(total>=2.9) return ['Active','bg-yellow-100 text-yellow-900'];
+      return ['Low Fit','bg-red-100 text-red-800'];
     }
 
     function recalcTotals(){
       let total=0, rf=0, answered=false;
-      document.querySelectorAll('#formRoot tr').forEach(tr=>{
+      document.querySelectorAll('#formRoot tbody tr').forEach(tr=>{
+        if(tr.classList.contains('hidden')) return; // ignora las ocultas por filtro visual
         const val=parseFloat(tr.querySelector('select').value||'');
-        const red=(val&&val<=2)||tr.querySelector('input').checked;
+        const red=(val && val<=2) || tr.querySelector('input[type="checkbox"]').checked;
         tr.classList.toggle('red-flag', red);
-        if(val){ total+=(val*(parseFloat(tr.dataset.weight)/100)); answered=true; }
+        if(!isNaN(val)){ total += (val * (parseFloat(tr.dataset.weight)/100)); answered=true; }
         if(red) rf++;
       });
-      const [label]=classify(total);
-      document.getElementById('footerScore').textContent=answered?total.toFixed(2):'—';
-      document.getElementById('footerType').textContent=answered?label:'—';
-      document.getElementById('footerRF').textContent=rf;
+      const [label, cls] = classify(total);
+      // badges header
+      const badgeType = document.getElementById('badgeType');
+      badgeType.className = 'px-2 py-0.5 rounded ' + (answered?cls:'bg-white/20');
+      badgeType.textContent = answered?label:'—';
+      document.getElementById('badgeScore').textContent = answered?total.toFixed(2):'—';
+      document.getElementById('badgeRF').textContent = rf.toString();
+      // footer
+      document.getElementById('footerScore').textContent = answered?total.toFixed(2):'—';
+      document.getElementById('footerType').textContent = answered?label:'—';
+      document.getElementById('footerRF').textContent = rf.toString();
     }
+    document.addEventListener('change',e=>{
+      if(e.target.matches('select,input[type="checkbox"]')) recalcTotals();
+    });
 
-    document.addEventListener('change',e=>{if(e.target.matches('select,input[type="checkbox"]'))recalcTotals();});
-    document.getElementById('btnClear').onclick=()=>{document.querySelectorAll('select').forEach(s=>s.value='');document.querySelectorAll('input[type="checkbox"]').forEach(c=>c.checked=false);document.querySelectorAll('textarea').forEach(t=>t.value='');document.querySelectorAll('tr').forEach(tr=>tr.classList.remove('red-flag'));recalcTotals();};
+    // =============== Limpiar ===============
+    document.getElementById('btnClear').onclick=()=>{
+      document.querySelectorAll('select').forEach(s=>s.value='');
+      document.querySelectorAll('input[type="checkbox"]').forEach(c=>c.checked=false);
+      document.querySelectorAll('textarea').forEach(t=>t.value='');
+      document.querySelectorAll('tr').forEach(tr=>tr.classList.remove('red-flag','hidden'));
+      roleMode.value='all'; searchBox.value='';
+      recalcTotals();
+    };
 
-    // =============== Exportar PDF ===============
+    // =============== PDF ===============
     document.getElementById('btnPDF').onclick=()=>{
+      const partner = (document.getElementById('partnerName').value||'Partner').trim();
       document.getElementById('pdfDate').textContent=new Date().toLocaleString();
-      document.getElementById('pdfPartner').textContent=document.getElementById('partnerName').value;
+      document.getElementById('pdfPartner').textContent=partner;
       document.getElementById('pdfPM').textContent=document.getElementById('partnerManager').value;
       document.getElementById('pdfScore').textContent=document.getElementById('footerScore').textContent;
       document.getElementById('pdfType').textContent=document.getElementById('footerType').textContent;
       document.getElementById('pdfRF').textContent=document.getElementById('footerRF').textContent;
-      const tb=document.getElementById('pdfBody');tb.innerHTML='';
-      document.querySelectorAll('#formRoot tr').forEach(tr=>{
-        const val=tr.querySelector('select').value||'';
-        const rf=tr.querySelector('input').checked?'Sí':'';
+
+      const tb=document.getElementById('pdfBody'); tb.innerHTML='';
+      document.querySelectorAll('#formRoot tbody tr').forEach(tr=>{
+        if(tr.classList.contains('hidden')) return; // respeta filtro actual
+        const sel=tr.querySelector('select'), val=sel.value||'';
+        const rf=tr.querySelector('input[type="checkbox"]').checked?'Sí':'';
+        const guide=tr.children[2].textContent.trim();
+        const weight=tr.dataset.weight;
         const d=tr.querySelector('textarea').value||'';
-        if(val||rf||d){
-          const trPDF=document.createElement('tr');
-          trPDF.innerHTML=`<td class="p-1 border">${tr.parentElement.parentElement.querySelector('div').textContent}</td><td class="p-1 border">${tr.dataset.role}</td><td class="p-1 border">${tr.children[1].textContent}</td><td class="p-1 border">${val}</td><td class="p-1 border">${rf}</td><td class="p-1 border">${d}</td>`;
-          if((val&&val<=2)||rf)trPDF.classList.add('red-flag');
-          tb.appendChild(trPDF);
+        if(val!=='' || rf || d){
+          const row=document.createElement('tr');
+          row.innerHTML=`
+            <td class="p-1 border">${tr.dataset.block}</td>
+            <td class="p-1 border">${tr.dataset.role}</td>
+            <td class="p-1 border">${tr.children[1].textContent}</td>
+            <td class="p-1 border">${guide}</td>
+            <td class="p-1 border">${weight}</td>
+            <td class="p-1 border">${val}</td>
+            <td class="p-1 border">${rf}</td>
+            <td class="p-1 border">${d}</td>`;
+          if((val && parseFloat(val)<=2) || rf) row.classList.add('red-flag');
+          tb.appendChild(row);
         }
       });
-      const opt={margin:10,filename:`Qualification_${document.getElementById('partnerName').value||'partner'}.
+      const opt={margin:10,filename:`Qualification_${partner.replace(/\s+/g,'_')}.pdf`,html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
+      const src=document.getElementById('pdfArea');
+      src.classList.remove('hidden');
+      html2pdf().set(opt).from(src).save().then(()=>src.classList.add('hidden'));
+    };
+
+    // =============== Excel (.xlsx) ===============
+    document.getElementById('btnXLSX').onclick=()=>{
+      const partner = (document.getElementById('partnerName').value||'Partner').trim();
+      // Sheet 1: Resumen
+      const resumen = [
+        ['Partner', partner],
+        ['Partner Manager', document.getElementById('partnerManager').value],
+        ['Total', document.getElementById('footerScore').textContent],
+        ['Clasificación', document.getElementById('footerType').textContent],
+        ['Red Flags (#)', document.getElementById('footerRF').textContent],
+        ['Generado', new Date().toLocaleString()],
+        ['Modo por rol', document.getElementById('roleMode').value],
+        ['Filtro texto', document.getElementById('searchBox').value]
+      ];
+      const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
+
+      // Sheet 2: Respuestas detalladas
+      const head = ['Bloque','Rol','Pregunta','Guía','Peso','Score','Red Flag','Comentarios'];
+      const rows = [head];
+      document.querySelectorAll('#formRoot tbody tr').forEach(tr=>{
+        if(tr.classList.contains('hidden')) return; // respeta filtro visual
+        const val = tr.querySelector('select').value || '';
+        const rf  = tr.querySelector('input[type="checkbox"]').checked ? 'Sí' : '';
+        const guia= tr.children[2].textContent.trim();
+        const peso= tr.dataset.weight;
+        const det = tr.querySelector('textarea').value || '';
+        if(val!=='' || rf || det){
+          rows.push([
+            tr.dataset.block,
+            tr.dataset.role,
+            tr.children[1].textContent,
+            guia,
+            peso,
+            val,
+            rf,
+            det
+          ]);
+        }
+      });
+      const wsDet = XLSX.utils.aoa_to_sheet(rows);
+
+      // Workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+      XLSX.utils.book_append_sheet(wb, wsDet, 'Respuestas');
+      XLSX.writeFile(wb, `Qualification_${partner.replace(/\s+/g,'_')}.xlsx`);
+    };
+
+    // Inicial
+    applyFilters();
+    recalcTotals();
+  </script>
+</body>
+</html>
