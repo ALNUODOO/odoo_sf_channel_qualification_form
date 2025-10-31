@@ -1,14 +1,223 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Odoo SF Partner Qualification Form</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Odoo Partner Qualification 360° — Formulario</title>
+  <!-- Tailwind para estilos rápidos -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2pdf para exportar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+  <style>
+    @media print { .no-print { display:none !important; } }
+    tr.red-flag { background-color:#fee2e2; color:#991b1b; }
+  </style>
 </head>
-<body>
-  <h1>Odoo Partner Qualification 360°</h1>
-  <p>Usa este formulario para evaluar a un partner.</p>
+<body class="bg-gray-50 text-slate-800">
+  <!-- Encabezado -->
+  <header class="bg-[#714B67] text-white p-4 shadow">
+    <h1 class="text-xl font-semibold">Odoo Partner Qualification 360° — Evaluación PR/PM</h1>
+  </header>
 
-  <!-- Aquí pega el código del formulario que te di (todo el HTML completo del canvas, con su script y estilos). -->
-</body>
-</html>
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Info básica -->
+    <section class="bg-white p-4 rounded-2xl shadow">
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label class="text-sm font-medium">Partner Name</label>
+          <input id="partnerName" class="w-full border rounded px-2 py-1 mt-1" placeholder="Ej. ERP México" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Partner Manager</label>
+          <input id="partnerManager" class="w-full border rounded px-2 py-1 mt-1" placeholder="Ej. Alnu / Wanessa / Andrés" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Vista por rol</label>
+          <select id="roleFilter" class="w-full border rounded px-2 py-1 mt-1">
+            <option value="all">Ver todo</option>
+            <option value="Recruiter">Solo Recruiter</option>
+            <option value="PM">Solo Partner Manager</option>
+          </select>
+        </div>
+      </div>
+      <p class="mt-2 text-xs text-gray-500">El total se calcula con <em>pesos internos × Score 1–5</em>. Los evaluadores no ven los pesos.</p>
+    </section>
+
+    <!-- Contenido dinámico -->
+    <section id="formRoot" class="mt-6 space-y-6"></section>
+
+    <!-- Footer de control -->
+    <footer class="fixed bottom-4 left-0 right-0 px-4 no-print">
+      <div class="max-w-7xl mx-auto bg-white border rounded-2xl shadow p-3 flex flex-col md:flex-row justify-between items-center gap-2">
+        <div class="text-sm text-gray-600">
+          <strong>Total:</strong> <span id="footerScore">—</span> · 
+          <strong>Tipo:</strong> <span id="footerType">—</span> · 
+          <strong>Red Flags:</strong> <span id="footerRF">0</span>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnClear" class="px-3 py-1 border rounded">Limpiar</button>
+          <button id="btnPDF" class="px-3 py-1 bg-[#714B67] text-white rounded">Descargar PDF</button>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Sección oculta para PDF -->
+  <section id="pdfArea" class="hidden p-6">
+    <h2 class="text-lg font-semibold">Odoo Partner Qualification 360° — Resultado</h2>
+    <p class="text-sm text-gray-600">Generado: <span id="pdfDate"></span></p>
+    <div class="grid grid-cols-2 gap-2 text-sm">
+      <div><strong>Partner:</strong> <span id="pdfPartner"></span></div>
+      <div><strong>Partner Manager:</strong> <span id="pdfPM"></span></div>
+      <div><strong>Total:</strong> <span id="pdfScore"></span></div>
+      <div><strong>Clasificación:</strong> <span id="pdfType"></span></div>
+      <div><strong>Red Flags:</strong> <span id="pdfRF"></span></div>
+    </div>
+    <div class="mt-3">
+      <table class="w-full text-xs border">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-1 text-left">Bloque</th>
+            <th class="p-1 text-left">Rol</th>
+            <th class="p-1 text-left">Pregunta</th>
+            <th class="p-1 text-left">Score</th>
+            <th class="p-1 text-left">🚩</th>
+            <th class="p-1 text-left">Comentarios</th>
+          </tr>
+        </thead>
+        <tbody id="pdfBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    // ================== Banco de Preguntas ==================
+    const QUESTIONS = [
+      // 0. Quick Profiling (Recruiter)
+      ['PR – Quick Profiling','Recruiter','¿Por qué quieren ser Partner de Odoo?','1=Curiosidad · 3=Diversificar · 5=Plan estratégico',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Tienen equipo dedicado o solo el fundador?','1=Solo founder · 3=1–2 part-time · 5=2+ full-time',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Han considerado invertir en PLO / Success Pack / Certificación?','1=No · 3=En análisis · 5=Ya invirtieron',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Experiencia previa en ERPs o software?','1=Ninguna · 3=Otros ERPs · 5=Odoo',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Dónde ven a Odoo en 1–2 años?','1=Incierto · 3=Complemento · 5=Core del negocio',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Quién toma la decisión final?','1=Indefinido · 3=Founder · 5=Comité/dirección',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Tienen presupuesto inicial (mkt/ventas/formación)?','1=0 · 3=$1–3k · 5=>$5k planificado',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Cuándo esperan cerrar su primera venta Enterprise?','1=>12m · 3=6–12m · 5=<3m',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Abiertos a reunión con PM (30–60–90)?','1=No · 3=Tal vez · 5=Sí',2.5],
+      ['PR – Quick Profiling','Recruiter','¿Son end-customer o planean vender Community?','1=Community/end-customer · 3=Ambos · 5=Solo Enterprise',2.5],
+
+      // 1. Estructura & Equipo
+      ['Estructura & Equipo','Ambos','¿Cuántas personas 100% dedicadas a Odoo?','1=1–2 · 3=3–4 · 5=5+',5],
+      ['Estructura & Equipo','Ambos','¿Founder full-time en Odoo?','1=No · 3=Parcial · 5=Sí',5],
+
+      // 2. Comerciales
+      ['Comerciales','PM','¿Pipeline activo Enterprise?','1=Ninguno · 3=1–3 · 5=5+',3.75],
+      ['Comerciales','PM','¿Win rate últimos 12m?','1=<10% · 3=30% · 5=>50%',3.75],
+      ['Comerciales','PM','¿Tienen equipo de ventas formal?','1=No · 3=1 parcial · 5=Equipo dedicado',3.75],
+      ['Comerciales','PM','¿ICP o vertical definido?','1=No · 3=Parcial · 5=Claro',3.75],
+
+      // 3. Técnicas
+      ['Técnicas','PM','¿Consultores certificados (últimas 3 versiones)?','1=0 · 3=1–2 · 5=3+',3.33],
+      ['Técnicas','PM','¿Cobertura de módulos clave?','1=1 módulo · 3=3 módulos · 5=4+',3.33],
+      ['Técnicas','PM','¿Usan Odoo.sh y QA/DevOps?','1=No · 3=Parcial · 5=Sí',3.33],
+
+      // 4. Delivery & Customer Success
+      ['Delivery & CS','PM','¿Metodología de implementación?','1=Ad-hoc · 3=Semi · 5=Formalizada/ágil',2.5],
+      ['Delivery & CS','PM','¿Time-to-first-value promedio?','1=>6m · 3=3–6m · 5=<3m',2.5],
+      ['Delivery & CS','PM','¿Miden NPS/CSAT o casos de éxito?','1=No · 3=1–2 · 5=Sí',2.5],
+      ['Delivery & CS','PM','¿Post-go-live (soporte/upsell)?','1=Reactivo · 3=Básico · 5=Proactivo/SLA',2.5],
+
+      // 5. Compromiso con Odoo
+      ['Compromiso','PM','¿Participan en trainings/webinars/eventos?','1=Nunca · 3=Ocasional · 5=Frecuente',1.66],
+      ['Compromiso','PM','¿Han hecho co-sell o co-marketing?','1=No · 3=Piloto · 5=Sí',1.66],
+      ['Compromiso','PM','¿Qué esperan de Odoo?','1=Leads gratis · 3=Soporte · 5=Alianza estratégica',1.66],
+
+      // 6. Clientes & Retención
+      ['Clientes & Retención','PM','¿Clientes activos Enterprise?','1=0 · 3=1–3 · 5=5+',1.66],
+      ['Clientes & Retención','PM','¿Retention rate anual?','1=<70% · 3=80% · 5=>90%',1.66],
+      ['Clientes & Retención','PM','¿Migraciones de Community a Enterprise?','1=Ninguna · 3=1–2 · 5=Recurrentes',1.66],
+
+      // 7. Riesgos & Alertas
+      ['Riesgos & Alertas','Ambos','¿Dependen de 1–2 clientes?','1=Sí (80%+) · 3=Parcial · 5=Diversificado',1.66],
+      ['Riesgos & Alertas','Ambos','¿Rotación alta de talento (>15%)?','1=Alta · 3=Media · 5=Baja',1.66],
+      ['Riesgos & Alertas','Ambos','¿Community-only o end-customer?','1=Sí · 3=Parcial · 5=No',1.66]
+    ];
+
+    // =============== Render dinámico ===============
+    const formRoot = document.getElementById('formRoot');
+    const grouped = QUESTIONS.reduce((a,[b,...r])=>((a[b]??=[]).push(r),a),{});
+    let qIndex=0;
+    Object.entries(grouped).forEach(([block,list])=>{
+      const card=document.createElement('div');
+      card.className='bg-white rounded-2xl shadow overflow-hidden';
+      card.innerHTML=`<div class="bg-gray-100 p-2 font-semibold">${block}</div><table class="w-full text-sm"><thead><tr class="bg-gray-50 text-gray-600"><th class="p-1">Rol</th><th class="p-1">Pregunta</th><th class="p-1">Guía</th><th class="p-1">Score</th><th class="p-1">🚩</th><th class="p-1">Comentarios</th></tr></thead><tbody></tbody></table>`;
+      const tb=card.querySelector('tbody');
+      list.forEach(([role,q,guide,weight])=>{
+        qIndex++;
+        const tr=document.createElement('tr');
+        tr.dataset.role=role; tr.dataset.weight=weight;
+        tr.innerHTML=`
+          <td class="p-1">${role}</td>
+          <td class="p-1">${q}</td>
+          <td class="p-1 text-xs text-gray-500">${guide}</td>
+          <td class="p-1"><select id="s${qIndex}" class="border rounded px-1 py-0.5 text-sm"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option>${n}</option>`).join('')}</select></td>
+          <td class="p-1 text-center"><input id="rf${qIndex}" type="checkbox"></td>
+          <td class="p-1"><textarea id="d${qIndex}" rows="1" class="w-full border rounded text-xs px-1"></textarea></td>`;
+        tb.appendChild(tr);
+      });
+      formRoot.appendChild(card);
+    });
+
+    // =============== Lógica de cálculo ===============
+    const roleFilter=document.getElementById('roleFilter');
+    roleFilter.addEventListener('change',()=>{
+      document.querySelectorAll('#formRoot tr').forEach(tr=>{
+        tr.classList.toggle('hidden', roleFilter.value!=='all' && tr.dataset.role!==roleFilter.value);
+      });
+    });
+
+    function classify(total){
+      if(total>=4.3) return ['Strategic','bg-green-100'];
+      if(total>=3.6) return ['Growth','bg-blue-100'];
+      if(total>=2.9) return ['Active','bg-yellow-100'];
+      return ['Low Fit','bg-red-100'];
+    }
+
+    function recalcTotals(){
+      let total=0, rf=0, answered=false;
+      document.querySelectorAll('#formRoot tr').forEach(tr=>{
+        const val=parseFloat(tr.querySelector('select').value||'');
+        const red=(val&&val<=2)||tr.querySelector('input').checked;
+        tr.classList.toggle('red-flag', red);
+        if(val){ total+=(val*(parseFloat(tr.dataset.weight)/100)); answered=true; }
+        if(red) rf++;
+      });
+      const [label]=classify(total);
+      document.getElementById('footerScore').textContent=answered?total.toFixed(2):'—';
+      document.getElementById('footerType').textContent=answered?label:'—';
+      document.getElementById('footerRF').textContent=rf;
+    }
+
+    document.addEventListener('change',e=>{if(e.target.matches('select,input[type="checkbox"]'))recalcTotals();});
+    document.getElementById('btnClear').onclick=()=>{document.querySelectorAll('select').forEach(s=>s.value='');document.querySelectorAll('input[type="checkbox"]').forEach(c=>c.checked=false);document.querySelectorAll('textarea').forEach(t=>t.value='');document.querySelectorAll('tr').forEach(tr=>tr.classList.remove('red-flag'));recalcTotals();};
+
+    // =============== Exportar PDF ===============
+    document.getElementById('btnPDF').onclick=()=>{
+      document.getElementById('pdfDate').textContent=new Date().toLocaleString();
+      document.getElementById('pdfPartner').textContent=document.getElementById('partnerName').value;
+      document.getElementById('pdfPM').textContent=document.getElementById('partnerManager').value;
+      document.getElementById('pdfScore').textContent=document.getElementById('footerScore').textContent;
+      document.getElementById('pdfType').textContent=document.getElementById('footerType').textContent;
+      document.getElementById('pdfRF').textContent=document.getElementById('footerRF').textContent;
+      const tb=document.getElementById('pdfBody');tb.innerHTML='';
+      document.querySelectorAll('#formRoot tr').forEach(tr=>{
+        const val=tr.querySelector('select').value||'';
+        const rf=tr.querySelector('input').checked?'Sí':'';
+        const d=tr.querySelector('textarea').value||'';
+        if(val||rf||d){
+          const trPDF=document.createElement('tr');
+          trPDF.innerHTML=`<td class="p-1 border">${tr.parentElement.parentElement.querySelector('div').textContent}</td><td class="p-1 border">${tr.dataset.role}</td><td class="p-1 border">${tr.children[1].textContent}</td><td class="p-1 border">${val}</td><td class="p-1 border">${rf}</td><td class="p-1 border">${d}</td>`;
+          if((val&&val<=2)||rf)trPDF.classList.add('red-flag');
+          tb.appendChild(trPDF);
+        }
+      });
+      const opt={margin:10,filename:`Qualification_${document.getElementById('partnerName').value||'partner'}.
