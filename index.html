@@ -218,9 +218,12 @@ function recalculate(){
   applyFilters();
   let totalScore=0,totalWeight=0,redFlags=0,answered=false;
   const blockScores={};
+  const blockData={};
+  
   document.querySelectorAll('#formRoot>div').forEach(card=>{
     const block=card.querySelector('div').textContent;
-    let blockTotal=0,blockWeight=0,blockAnswered=0;
+    let blockTotal=0,blockWeight=0;
+    
     card.querySelectorAll('[data-qid]').forEach(qDiv=>{
       if(qDiv.classList.contains('hidden'))return;
       const weight=parseFloat(qDiv.dataset.weight);
@@ -228,17 +231,23 @@ function recalculate(){
       if(selected){
         answered=true;
         const value=parseInt(selected.value);
-        totalScore+=(value*weight);
+        const weightedScore=(value/5)*weight;
+        totalScore+=weightedScore;
         totalWeight+=weight;
-        blockTotal+=(value*weight);
+        blockTotal+=weightedScore;
         blockWeight+=weight;
-        blockAnswered++;
         if(value<=2){redFlags++;qDiv.classList.add('red-flag');}else{qDiv.classList.remove('red-flag');}
       }
     });
-    if(blockWeight>0)blockScores[block]=(blockTotal/blockWeight)*5;
+    
+    if(blockWeight>0){
+      blockScores[block]=(blockTotal/blockWeight)*5;
+    }
   });
-  if(totalWeight>0)totalScore=(totalScore/totalWeight)*5;
+  
+  if(totalWeight>0){
+    totalScore=(totalScore/totalWeight)*5;
+  }
   let category='Low Fit',categoryClass='bg-red-500 text-white';
   if(totalScore>=4.3){category='Strategic';categoryClass='bg-green-500 text-white';}
   else if(totalScore>=3.6){category='Growth';categoryClass='bg-blue-500 text-white';}
