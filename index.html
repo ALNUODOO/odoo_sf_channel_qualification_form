@@ -150,7 +150,7 @@
   </section>
 
   <script>
-const LANG={es:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Tipo:',labelSubcat:'Subcat:',labelTotal:'Total:',labelPartnerName:'Nombre del Partner *',labelPartnerManager:'Salesperson *',labelRoleMode:'Filtro por Rol',labelSearch:'Búsqueda',optAll:'Ver Todo',optRecruiter:'Recruiter + Compartidas',optPM:'PM + Compartidas',noteLabel:'Nota:',noteText:'Selecciona N/A si no aplica.',resultsTitle:'Clasificación',actionPlanTitle:'Plan de Acción',footerLabelTotal:'Total:',footerLabelType:'Tipo:',btnClearText:'Limpiar',confirmClear:'¿Seguro?',alertNoData:'Completa Partner Name y Salesperson.',alertNoResponses:'No hay respuestas.',pdfGenerated:'Generado:',commentsPlaceholder:'Comentarios...'},en:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Type:',labelSubcat:'Subcat:',labelTotal:'Total:',labelPartnerName:'Partner Name *',labelPartnerManager:'Salesperson *',labelRoleMode:'Role Filter',labelSearch:'Search',optAll:'View All',optRecruiter:'Recruiter + Shared',optPM:'PM + Shared',noteLabel:'Note:',noteText:'Select N/A if doesn\'t apply.',resultsTitle:'Classification',actionPlanTitle:'Action Plan',footerLabelTotal:'Total:',footerLabelType:'Type:',btnClearText:'Clear',confirmClear:'Are you sure?',alertNoData:'Complete Partner and Salesperson.',alertNoResponses:'No responses.',pdfGenerated:'Generated:',commentsPlaceholder:'Comments...'}};
+  const LANG={es:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Tipo:',labelSubcat:'Subcat:',labelTotal:'Total:',labelPartnerName:'Nombre del Partner *',labelPartnerManager:'Salesperson *',labelRoleMode:'Filtro por Rol',labelSearch:'Búsqueda',optAll:'Ver Todo',optRecruiter:'Recruiter + Compartidas',optPM:'PM + Compartidas',noteLabel:'Nota:',noteText:'Selecciona N/A si no aplica.',resultsTitle:'Clasificación',actionPlanTitle:'Plan de Acción',footerLabelTotal:'Total:',footerLabelType:'Tipo:',btnClearText:'Limpiar',confirmClear:'¿Seguro?',alertNoData:'Completa Partner Name y Salesperson.',alertNoResponses:'No hay respuestas.',pdfGenerated:'Generado:',commentsPlaceholder:'Comentarios...'},en:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Type:',labelSubcat:'Subcat:',labelTotal:'Total:',labelPartnerName:'Partner Name *',labelPartnerManager:'Salesperson *',labelRoleMode:'Role Filter',labelSearch:'Search',optAll:'View All',optRecruiter:'Recruiter + Shared',optPM:'PM + Shared',noteLabel:'Note:',noteText:'Select N/A if doesn\'t apply.',resultsTitle:'Classification',actionPlanTitle:'Action Plan',footerLabelTotal:'Total:',footerLabelType:'Type:',btnClearText:'Clear',confirmClear:'Are you sure?',alertNoData:'Complete Partner and Salesperson.',alertNoResponses:'No responses.',pdfGenerated:'Generated:',commentsPlaceholder:'Comments...'}};
 
 const Q=[
 {b:'PR Quick Profiling',r:'Recruiter',es:'¿Cuántos años llevan implementando software empresarial?',en:'How many years implementing business software?',o:[['<1 año (recién)','<1 year (new)'],['1-2 años','1-2 years'],['2-5 años','2-5 years'],['5-10 años','5-10 years'],['>10 años (expertos)','>10 years (experts)']],w:10,t:'core'},
@@ -199,6 +199,15 @@ let currentLang='es';
 
 function renderForm(){
   const root=document.getElementById('formRoot');
+  const savedAnswers={};
+  const savedComments={};
+  document.querySelectorAll('[data-qid]').forEach(qDiv=>{
+    const qid=qDiv.dataset.qid;
+    const selected=qDiv.querySelector('input[type="radio"]:checked');
+    if(selected)savedAnswers[qid]=selected.value;
+    const comment=qDiv.querySelector('textarea');
+    if(comment&&comment.value)savedComments[qid]=comment.value;
+  });
   root.innerHTML='';
   const grouped={};
   Q.forEach(q=>{if(!grouped[q.b])grouped[q.b]=[];grouped[q.b].push(q);});
@@ -209,7 +218,7 @@ function renderForm(){
     const container=document.createElement('div');
     container.className='p-4 space-y-6';
     list.forEach((q,idx)=>{
-      const qId=`q${Date.now()}${idx}`;
+      const qId=`q_${block.replace(/\s+/g,'_')}_${idx}`;
       const question=currentLang==='es'?q.es:q.en;
       const qDiv=document.createElement('div');
       qDiv.className='border-b pb-3 mb-3';
@@ -222,12 +231,14 @@ function renderForm(){
       const hasNA=q.t==='maturity'||q.t==='aspiration';
       if(hasNA){
         const naText=currentLang==='es'?q.o[0][0]:q.o[0][1];
-        opts+=`<label class="flex items-center gap-2 cursor-pointer radio-option na-option" title="${naText}"><input type="radio" name="${qId}" value="NA"/><span class="text-xs font-semibold text-gray-600">N/A</span></label>`;
+        const checked=savedAnswers[qId]==='NA'?' checked':'';
+        opts+=`<label class="flex items-center gap-2 cursor-pointer radio-option na-option" title="${naText}"><input type="radio" name="${qId}" value="NA"${checked}/><span class="text-xs font-semibold text-gray-600">N/A</span></label>`;
       }
       for(let i=hasNA?1:0;i<5;i++){
         const optText=currentLang==='es'?q.o[i][0]:q.o[i][1];
         const val=i+1-(hasNA?1:0);
-        opts+=`<label class="flex items-center gap-2 cursor-pointer radio-option" title="${optText}"><input type="radio" name="${qId}" value="${val}"/><span class="text-xs font-semibold text-[#714B67]">${val}</span></label>`;
+        const checked=savedAnswers[qId]==val?' checked':'';
+        opts+=`<label class="flex items-center gap-2 cursor-pointer radio-option" title="${optText}"><input type="radio" name="${qId}" value="${val}"${checked}/><span class="text-xs font-semibold text-[#714B67]">${val}</span></label>`;
       }
       let guideHTML='<div class="text-xs text-gray-500 mt-2"><div class="space-y-0.5">';
       if(hasNA)guideHTML+=`<div><strong>N/A:</strong> ${currentLang==='es'?q.o[0][0]:q.o[0][1]}</div>`;
@@ -237,7 +248,8 @@ function renderForm(){
         guideHTML+=`<div><strong>${val}:</strong> ${optText}</div>`;
       }
       guideHTML+='</div></div>';
-      qDiv.innerHTML=`<div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start"><div class="md:col-span-5"><div class="flex items-start gap-2"><span class="inline-block px-2 py-0.5 text-xs rounded flex-shrink-0 ${q.r==='Recruiter'?'bg-blue-100 text-blue-800':q.r==='PM'?'bg-purple-100 text-purple-800':'bg-green-100 text-green-800'}">${q.r}</span><p class="text-sm font-medium text-gray-800 question-text">${question}</p></div></div><div class="md:col-span-3"><div class="flex gap-2 items-center flex-wrap mb-1">${opts}</div>${guideHTML}</div><div class="md:col-span-4"><textarea id="comment_${qId}" rows="1" class="w-full border rounded px-2 py-1 text-xs focus:ring-2 focus:ring-[#714B67]" placeholder="${LANG[currentLang].commentsPlaceholder}"></textarea></div></div>`;
+      const savedComment=savedComments[qId]||'';
+      qDiv.innerHTML=`<div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start"><div class="md:col-span-5"><div class="flex items-start gap-2"><span class="inline-block px-2 py-0.5 text-xs rounded flex-shrink-0 ${q.r==='Recruiter'?'bg-blue-100 text-blue-800':q.r==='PM'?'bg-purple-100 text-purple-800':'bg-green-100 text-green-800'}">${q.r}</span><p class="text-sm font-medium text-gray-800 question-text">${question}</p></div></div><div class="md:col-span-3"><div class="flex gap-2 items-center flex-wrap mb-1">${opts}</div>${guideHTML}</div><div class="md:col-span-4"><textarea id="comment_${qId}" rows="1" class="w-full border rounded px-2 py-1 text-xs focus:ring-2 focus:ring-[#714B67]" placeholder="${LANG[currentLang].commentsPlaceholder}">${savedComment}</textarea></div></div>`;
       container.appendChild(qDiv);
     });
     card.appendChild(container);
@@ -371,85 +383,11 @@ function updateLanguage(){
 }
 
 document.getElementById('langToggle').addEventListener('click',()=>{currentLang=currentLang==='es'?'en':'es';updateLanguage();});
-
-document.getElementById('btnClear').addEventListener('click',()=>{
-  if(!confirm(LANG[currentLang].confirmClear))return;
-  document.querySelectorAll('input[type="radio"]').forEach(r=>r.checked=false);
-  document.querySelectorAll('textarea').forEach(t=>t.value='');
-  document.querySelectorAll('[data-qid]').forEach(d=>d.classList.remove('red-flag','hidden'));
-  document.getElementById('partnerName').value='';
-  document.getElementById('partnerManager').value='';
-  document.getElementById('roleMode').value='all';
-  document.getElementById('searchBox').value='';
-  recalculate();
-});
-
-document.getElementById('btnPDF').addEventListener('click',()=>{
-  const partner=document.getElementById('partnerName').value.trim();
-  const pm=document.getElementById('partnerManager').value.trim();
-  if(!partner||!pm){alert(LANG[currentLang].alertNoData);return;}
-  const totalScore=document.getElementById('footerScore').textContent;
-  if(totalScore==='—'){alert(LANG[currentLang].alertNoResponses);return;}
-  document.getElementById('pdfDate').textContent=new Date().toLocaleString(currentLang==='es'?'es-ES':'en-US');
-  document.getElementById('pdfPartner').textContent=partner;
-  document.getElementById('pdfPM').textContent=pm;
-  document.getElementById('pdfScore').textContent=totalScore;
-  document.getElementById('pdfType').textContent=document.getElementById('footerType').textContent;
-  document.getElementById('pdfSubcat').textContent=document.getElementById('displaySubcategory').textContent;
-  document.getElementById('pdfRF').textContent=document.getElementById('footerRF').textContent;
-  document.getElementById('pdfActionPlan').innerHTML=document.getElementById('actionPlanList').innerHTML;
-  const tbody=document.getElementById('pdfBody');
-  tbody.innerHTML='';
-  let hasData=false;
-  document.querySelectorAll('[data-qid]').forEach(qDiv=>{
-    if(qDiv.classList.contains('hidden'))return;
-    const selected=qDiv.querySelector('input[type="radio"]:checked');
-    if(!selected||selected.value==='NA')return;
-    hasData=true;
-    const row=document.createElement('tr');
-    const val=selected.value;
-    row.innerHTML=`<td class="p-2 border">${qDiv.dataset.block}</td><td class="p-2 border">${qDiv.dataset.role}</td><td class="p-2 border">${qDiv.querySelector('.question-text').textContent}</td><td class="p-2 border text-center">${val}</td><td class="p-2 border">${qDiv.querySelector('textarea').value||''}</td>`;
-    if(parseInt(val)<=2)row.classList.add('red-flag');
-    tbody.appendChild(row);
-  });
-  if(!hasData){alert(LANG[currentLang].alertNoResponses);return;}
-  const src=document.getElementById('pdfArea');
-  src.classList.remove('hidden');
-  const opt={margin:10,filename:`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`,html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
-  html2pdf().set(opt).from(src).save().then(()=>src.classList.add('hidden'));
-});
-
-document.getElementById('btnXLSX').addEventListener('click',()=>{
-  const partner=document.getElementById('partnerName').value.trim();
-  const pm=document.getElementById('partnerManager').value.trim();
-  if(!partner||!pm){alert(LANG[currentLang].alertNoData);return;}
-  const totalScore=document.getElementById('footerScore').textContent;
-  if(totalScore==='—'){alert(LANG[currentLang].alertNoResponses);return;}
-  const summary=[['Partner',partner],['Salesperson',pm],['Total Score',totalScore],['Category',document.getElementById('footerType').textContent],['Subcategory',document.getElementById('displaySubcategory').textContent],['Red Flags',document.getElementById('footerRF').textContent],['Date',new Date().toLocaleString()],[''],['Action Plan:']];
-  const actions=document.getElementById('actionPlanList').querySelectorAll('div');
-  actions.forEach(a=>summary.push(['',a.textContent]));
-  const wsSummary=XLSX.utils.aoa_to_sheet(summary);
-  const headers=['Block','Role','Question','Score','Comments'];
-  const rows=[headers];
-  let hasData=false;
-  document.querySelectorAll('[data-qid]').forEach(qDiv=>{
-    if(qDiv.classList.contains('hidden'))return;
-    const selected=qDiv.querySelector('input[type="radio"]:checked');
-    if(!selected||selected.value==='NA')return;
-    hasData=true;
-    rows.push([qDiv.dataset.block,qDiv.dataset.role,qDiv.querySelector('.question-text').textContent,selected.value,qDiv.querySelector('textarea').value||'']);
-  });
-  if(!hasData){alert(LANG[currentLang].alertNoResponses);return;}
-  const wsResponses=XLSX.utils.aoa_to_sheet(rows);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,wsSummary,'Summary');
-  XLSX.utils.book_append_sheet(wb,wsResponses,'Responses');
-  XLSX.writeFile(wb,`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
-});
-
+document.getElementById('btnClear').addEventListener('click',()=>{if(!confirm(LANG[currentLang].confirmClear))return;document.querySelectorAll('input[type="radio"]').forEach(r=>r.checked=false);document.querySelectorAll('textarea').forEach(t=>t.value='');document.querySelectorAll('[data-qid]').forEach(d=>d.classList.remove('red-flag','hidden'));document.getElementById('partnerName').value='';document.getElementById('partnerManager').value='';document.getElementById('roleMode').value='all';document.getElementById('searchBox').value='';recalculate();});
+document.getElementById('btnPDF').addEventListener('click',()=>{const partner=document.getElementById('partnerName').value.trim();const pm=document.getElementById('partnerManager').value.trim();if(!partner||!pm){alert(LANG[currentLang].alertNoData);return;}const totalScore=document.getElementById('footerScore').textContent;if(totalScore==='—'){alert(LANG[currentLang].alertNoResponses);return;}document.getElementById('pdfDate').textContent=new Date().toLocaleString(currentLang==='es'?'es-ES':'en-US');document.getElementById('pdfPartner').textContent=partner;document.getElementById('pdfPM').textContent=pm;document.getElementById('pdfScore').textContent=totalScore;document.getElementById('pdfType').textContent=document.getElementById('footerType').textContent;document.getElementById('pdfSubcat').textContent=document.getElementById('displaySubcategory').textContent;document.getElementById('pdfRF').textContent=document.getElementById('footerRF').textContent;document.getElementById('pdfActionPlan').innerHTML=document.getElementById('actionPlanList').innerHTML;const tbody=document.getElementById('pdfBody');tbody.innerHTML='';let hasData=false;document.querySelectorAll('[data-qid]').forEach(qDiv=>{if(qDiv.classList.contains('hidden'))return;const selected=qDiv.querySelector('input[type="radio"]:checked');if(!selected||selected.value==='NA')return;hasData=true;const row=document.createElement('tr');const val=selected.value;row.innerHTML=`<td class="p-2 border">${qDiv.dataset.block}</td><td class="p-2 border">${qDiv.dataset.role}</td><td class="p-2 border">${qDiv.querySelector('.question-text').textContent}</td><td class="p-2 border text-center">${val}</td><td class="p-2 border">${qDiv.querySelector('textarea').value||''}</td>`;if(parseInt(val)<=2)row.classList.add('red-flag');tbody.appendChild(row);});if(!hasData){alert(LANG[currentLang].alertNoResponses);return;}const src=document.getElementById('pdfArea');src.classList.remove('hidden');const opt={margin:10,filename:`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`,html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};html2pdf().set(opt).from(src).save().then(()=>src.classList.add('hidden'));});
+document.getElementById('btnXLSX').addEventListener('click',()=>{const partner=document.getElementById('partnerName').value.trim();const pm=document.getElementById('partnerManager').value.trim();if(!partner||!pm){alert(LANG[currentLang].alertNoData);return;}const totalScore=document.getElementById('footerScore').textContent;if(totalScore==='—'){alert(LANG[currentLang].alertNoResponses);return;}const summary=[['Partner',partner],['Salesperson',pm],['Total Score',totalScore],['Category',document.getElementById('footerType').textContent],['Subcategory',document.getElementById('displaySubcategory').textContent],['Red Flags',document.getElementById('footerRF').textContent],['Date',new Date().toLocaleString()],[''],['Action Plan:']];const actions=document.getElementById('actionPlanList').querySelectorAll('div');actions.forEach(a=>summary.push(['',a.textContent]));const wsSummary=XLSX.utils.aoa_to_sheet(summary);const headers=['Block','Role','Question','Score','Comments'];const rows=[headers];let hasData=false;document.querySelectorAll('[data-qid]').forEach(qDiv=>{if(qDiv.classList.contains('hidden'))return;const selected=qDiv.querySelector('input[type="radio"]:checked');if(!selected||selected.value==='NA')return;hasData=true;rows.push([qDiv.dataset.block,qDiv.dataset.role,qDiv.querySelector('.question-text').textContent,selected.value,qDiv.querySelector('textarea').value||'']);});if(!hasData){alert(LANG[currentLang].alertNoResponses);return;}const wsResponses=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,wsSummary,'Summary');XLSX.utils.book_append_sheet(wb,wsResponses,'Responses');XLSX.writeFile(wb,`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.xlsx`);});
 document.getElementById('roleMode').addEventListener('change',()=>{applyFilters();recalculate();});
 document.getElementById('searchBox').addEventListener('input',applyFilters);
-
 updateLanguage();
   </script>
 </body>
