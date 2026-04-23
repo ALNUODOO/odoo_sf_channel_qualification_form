@@ -859,6 +859,8 @@ function renderForm(savedData){
       const qId=`q_${block.replace(/\s+/g,'_')}_${idx}`;
       const question=currentLang==='es'?q.es:q.en;
       const isMorA=q.t==='maturity'||q.t==='aspiration';
+      // hasNA: true only if first option actually starts with N/A (some maturity/aspiration don't have it)
+      const hasNA=isMorA&&q.o[0][0].startsWith('N/A');
       const savedAns=savedAnswers[qId];
       const savedCom=savedComments[qId]||'';
       const needsComment=savedAns?isCommentRequired(savedAns):false;
@@ -875,7 +877,8 @@ function renderForm(savedData){
         :'<span class="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 font-medium">Ambos</span>';
 
       let optHTML='';
-      if(isMorA){
+      if(hasNA){
+        // N/A + scores 1-5 (q.o has 6 items: index 0=N/A, indices 1-5=scores)
         const naText=currentLang==='es'?q.o[0][0]:q.o[0][1];
         const naChk=savedAns==='NA';
         optHTML+=`<label class="radio-label na-label${naChk?' selected':''}"><input type="radio" name="${qId}" value="NA"${naChk?' checked':''}/><span class="opt-text text-xs text-gray-500 font-bold">N/A</span><span class="text-xs text-gray-400 hidden sm:inline ml-1">– ${naText.replace(/^N\/A\s*[–-]\s*/,'')}</span></label>`;
@@ -885,6 +888,7 @@ function renderForm(savedData){
           optHTML+=`<label class="radio-label${chk?' selected':''}"><input type="radio" name="${qId}" value="${i}"${chk?' checked':''}/><span class="opt-text text-xs font-bold text-[#714B67] min-w-[14px]">${i}</span><span class="text-xs text-gray-600">${optText}</span></label>`;
         }
       } else {
+        // No N/A — scores 1-5 (q.o has exactly 5 items: indices 0-4)
         for(let i=0;i<5;i++){
           const optText=currentLang==='es'?q.o[i][0]:q.o[i][1];
           const val=i+1;const chk=savedAns==val;
