@@ -213,11 +213,12 @@
   <table style="width:100%;font-size:10px;border-collapse:collapse;margin-bottom:16px">
     <thead>
       <tr style="background:#714B67;color:white">
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:14%">Bloque</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:9%">Rol</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:38%">Pregunta</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:center;width:7%">Score</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:32%">Comentarios del PM</th>
+        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:12%">Bloque</th>
+        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:7%">Rol</th>
+        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:26%">Pregunta</th>
+        <th style="padding:5px 6px;border:1px solid #ccc;text-align:center;width:5%">Score</th>
+        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:24%">Opción elegida</th>
+        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:26%">Comentarios del PM</th>
       </tr>
     </thead>
     <tbody id="pdfBody"></tbody>
@@ -273,11 +274,12 @@ const Q=[
   {b:'PR Quick Profiling',r:'Recruiter',
    es:'¿Han invertido en certificaciones oficiales de Odoo o en el PLO?',
    en:'Have they invested in official Odoo certifications or PLO?',
-   o:[['N/A – No sabíamos que existían','N/A – Didn\'t know they existed'],
+   o:[['N/A – No sabíamos que existían','N/A – Did not know they existed'],
       ['Sin presupuesto ni planes concretos','No budget or concrete plans'],
-      ['Están evaluando si vale la pena','Evaluating whether it\'s worth it'],
+      ['Están evaluando si vale la pena','Evaluating whether it is worth it'],
       ['Presupuesto aprobado, aún no ejecutado','Budget approved, not yet executed'],
-      ['Ya han invertido y tienen certificados','Already invested and hold certifications']],
+      ['En proceso activo de certificación o PLO','Actively in certification or PLO process'],
+      ['Ya han invertido y tienen certificados oficiales','Already invested and hold official certifications']],
    w:8,t:'maturity'},
 
   // C3: Redacción mejorada "¿Cómo conocieron Odoo?"
@@ -326,6 +328,7 @@ const Q=[
    es:'¿Qué tipo de proyectos Odoo están haciendo o planean hacer?',
    en:'What type of Odoo projects are they doing or planning to do?',
    o:[['N/A – Aún no han arrancado ningún proyecto con clientes','N/A – Have not started any client projects yet'],
+      ['Uso interno propio, sin vender a clientes todavía','Internal use only, not selling to clients yet'],
       ['Mayoría Community, algún Enterprise esporádico','Mostly Community, occasional Enterprise'],
       ['Mix 50/50 entre Community y Enterprise','Mix 50/50 between Community and Enterprise'],
       ['Principalmente Enterprise con algún Community','Mainly Enterprise with some Community'],
@@ -340,7 +343,8 @@ const Q=[
       ['LATAM: menos de $5K / USA: menos de $15K USD','LATAM: under $5K / USA: under $15K USD'],
       ['LATAM: $5K–$20K / USA: $15K–$50K USD','LATAM: $5K–$20K / USA: $15K–$50K USD'],
       ['LATAM: $20K–$50K / USA: $50K–$120K USD','LATAM: $20K–$50K / USA: $50K–$120K USD'],
-      ['LATAM: $50K–$100K / USA: $120K–$250K USD o más','LATAM: $50K–$100K / USA: $120K–$250K USD or more']],
+      ['LATAM: $50K–$100K / USA: $120K–$250K USD','LATAM: $50K–$100K / USA: $120K–$250K USD'],
+      ['LATAM: más de $100K / USA: más de $250K USD','LATAM: over $100K / USA: over $250K USD']],
    w:8,t:'maturity'},
 
   // ── ESTRUCTURA & EQUIPO ── Ambos ──────────────────────────────────
@@ -380,9 +384,10 @@ const Q=[
    en:'Do they have available capacity to start a new implementation project today?',
    o:[['N/A – Aún no tienen equipo para proyectos','N/A – No team for projects yet'],
       ['No, están al 100% de capacidad sin margen','No, at 100% capacity with no margin'],
-      ['Limitada, podrían en 2-3 meses','Limited, could in 2-3 months'],
-      ['Sí, con algo de planificación previa','Yes, with some prior planning'],
-      ['Sí, tienen capacidad disponible ahora mismo','Yes, have capacity available right now']],
+      ['Limitada, podrían arrancar en 2-3 meses','Limited, could start in 2-3 months'],
+      ['Sí, con algo de planificación previa (1-2 semanas)','Yes, with some prior planning (1-2 weeks)'],
+      ['Sí, tienen capacidad disponible ahora mismo','Yes, have capacity available right now'],
+      ['Sí, y tienen bench de recursos listos para escalar','Yes, and have bench resources ready to scale']],
    w:8,t:'maturity'},
 
   // ── COMERCIALES ── PM ─────────────────────────────────────────────
@@ -393,17 +398,19 @@ const Q=[
       ['Ninguna, no hay pipeline activo','None, no active pipeline'],
       ['1-2 oportunidades','1-2 opportunities'],
       ['3-5 oportunidades','3-5 opportunities'],
-      ['Más de 6 oportunidades activas','More than 6 active opportunities']],
+      ['6-10 oportunidades activas','6-10 active opportunities'],
+      ['Más de 10 oportunidades activas','More than 10 active opportunities']],
    w:12,t:'maturity'},
 
   {b:'Comerciales',r:'PM',
    es:'¿Cuál es su win rate aproximado en oportunidades Enterprise?',
    en:'What is their approximate win rate on Enterprise opportunities?',
-   o:[['N/A – Llevan menos de 12 meses operando','N/A – Operating for less than 12 months'],
-      ['Menos del 25%','Less than 25%'],
-      ['25-40%','25-40%'],
+   o:[['N/A – Llevan menos de 12 meses operando o sin deals cerrados','N/A – Operating less than 12 months or no closed deals'],
+      ['Menos del 20%, muy bajo','Less than 20%, very low'],
+      ['20-40%','20-40%'],
       ['40-60%','40-60%'],
-      ['Más del 60%','More than 60%']],
+      ['60-75%','60-75%'],
+      ['Más del 75%, excelente win rate','>75%, excellent win rate']],
    w:10,t:'maturity'},
 
   {b:'Comerciales',r:'PM',
@@ -441,11 +448,12 @@ const Q=[
   {b:'Comerciales',r:'Ambos',
    es:'¿Cuánto dura típicamente su proceso desde que identifican un lead hasta cerrar el contrato?',
    en:'How long does their process typically take from identifying a lead to closing the contract?',
-   o:[['N/A – Sin deals Enterprise cerrados aun para tener referencia','N/A – No Enterprise deals closed yet to have a reference'],
-      ['Mas de 9 meses','More than 9 months'],
+   o:[['N/A – Sin deals Enterprise cerrados aún para tener referencia','N/A – No Enterprise deals closed yet to have a reference'],
+      ['Más de 9 meses','More than 9 months'],
       ['6 a 9 meses','6 to 9 months'],
       ['3 a 6 meses','3 to 6 months'],
-      ['Menos de 3 meses o proceso muy eficiente','Less than 3 months or very efficient process']],
+      ['1 a 3 meses','1 to 3 months'],
+      ['Menos de 1 mes, proceso muy ágil y eficiente','Less than 1 month, very agile and efficient process']],
    w:6,t:'maturity'},
 
   // ── TÉCNICAS ── PM ────────────────────────────────────────────────
@@ -457,18 +465,20 @@ const Q=[
       ['Ninguno, llevan tiempo sin certificar a nadie','None, have been around without certifying anyone'],
       ['1 certificado Odoo','1 Odoo certified'],
       ['2 certificados Odoo','2 Odoo certified'],
-      ['3 o más certificados Odoo','3 or more Odoo certified']],
+      ['3 certificados Odoo','3 Odoo certified'],
+      ['4 o más certificados Odoo','4 or more Odoo certified']],
    w:12,t:'maturity'},
 
   // C2b: Nueva — otras certificaciones como valor complementario
   {b:'Técnicas',r:'PM',
    es:'¿El equipo tiene certificaciones o experiencia formal en otras herramientas además de Odoo?',
    en:'Does the team have certifications or formal experience in tools beyond Odoo?',
-   o:[['N/A – Solo trabajan con Odoo','N/A – Only work with Odoo'],
-      ['No, sin certificaciones en otras herramientas','No, no certifications in other tools'],
+   o:[['N/A – Solo trabajan con Odoo, no aplica','N/A – Only work with Odoo, does not apply'],
+      ['No, sin ninguna certificación en otras herramientas','No, no certifications in other tools at all'],
       ['Herramientas básicas (Excel avanzado, CRM simple)','Basic tools (advanced Excel, simple CRM)'],
       ['1 ERP o plataforma adicional (SAP, Salesforce, etc.)','1 additional ERP or platform (SAP, Salesforce, etc.)'],
-      ['2 o más ERPs o plataformas certificadas, equipo multi-plataforma','2+ certified ERPs or platforms, multi-platform team']],
+      ['2 ERPs o plataformas adicionales certificadas','2 additional certified ERPs or platforms'],
+      ['3 o más plataformas, equipo multi-plataforma consolidado','3+ platforms, consolidated multi-platform team']],
    w:6,t:'aspiration'},
 
   {b:'Técnicas',r:'PM',
@@ -478,7 +488,8 @@ const Q=[
       ['Solo 1 módulo','Only 1 module'],
       ['2-3 módulos','2-3 modules'],
       ['4-6 módulos','4-6 modules'],
-      ['7 o más módulos','7 or more modules']],
+      ['7-10 módulos','7-10 modules'],
+      ['Más de 10 módulos, implementaciones complejas multi-área','More than 10 modules, complex multi-area implementations']],
    w:10,t:'maturity'},
 
   {b:'Técnicas',r:'PM',
@@ -487,8 +498,9 @@ const Q=[
    o:[['N/A – Sus proyectos son muy simples o aún no implementan','N/A – Projects are very simple or not implementing yet'],
       ['Hosting básico sin proceso de QA','Basic hosting with no QA process'],
       ['Usan Odoo.sh con QA manual básico','Use Odoo.sh with basic manual QA'],
-      ['Proceso semi-automatizado con staging','Semi-automated process with staging'],
-      ['DevOps completo con CI/CD y pruebas automatizadas','Full DevOps with CI/CD and automated testing']],
+      ['Odoo.sh con staging y proceso semi-automatizado','Odoo.sh with staging and semi-automated process'],
+      ['DevOps completo con CI/CD y pruebas automatizadas','Full DevOps with CI/CD and automated testing'],
+      ['DevOps avanzado, rollbacks automáticos y monitoreo en producción','Advanced DevOps, automatic rollbacks and production monitoring']],
    w:8,t:'maturity'},
 
   {b:'Técnicas',r:'PM',
@@ -498,7 +510,8 @@ const Q=[
       ['La conocen pero no la usan actualmente','Know it but do not use it currently'],
       ['La usan ocasionalmente para 1-2 apps','Use it occasionally for 1-2 apps'],
       ['Usan varias apps regularmente en sus proyectos','Use several apps regularly in their projects'],
-      ['Publican sus propias apps en la tienda','Publish their own apps in the store']],
+      ['Publican apps propias con descargas activas','Publish their own apps with active downloads'],
+      ['Publican múltiples apps y tienen presencia consolidada en la tienda','Publish multiple apps and have consolidated store presence']],
    w:6,t:'aspiration'},
 
   {b:'Técnicas',r:'PM',
@@ -519,7 +532,8 @@ const Q=[
       ['Sin proceso formal, cada proyecto es diferente','No formal process, each project is different'],
       ['Proceso semi-estructurado con algunas plantillas','Semi-structured process with some templates'],
       ['Metodología documentada y replicable','Documented and replicable methodology'],
-      ['Ágil con mejora continua y lecciones aprendidas','Agile with continuous improvement and lessons learned']],
+      ['Ágil con mejora continua y lecciones aprendidas','Agile with continuous improvement and lessons learned'],
+      ['Metodología certificada, benchmarked y evolucionando activamente','Certified methodology, benchmarked and actively evolving']],
    w:10,t:'maturity'},
 
   {b:'Delivery & CS',r:'PM',
@@ -529,7 +543,8 @@ const Q=[
       ['Más de 6 meses','More than 6 months'],
       ['4 a 6 meses','4 to 6 months'],
       ['2 a 4 meses','2 to 4 months'],
-      ['Menos de 2 meses','Less than 2 months']],
+      ['Menos de 2 meses','Less than 2 months'],
+      ['Menos de 1 mes, implementaciones express con metodología ágil','Less than 1 month, express implementations with agile methodology']],
    w:8,t:'maturity'},
 
   {b:'Delivery & CS',r:'PM',
@@ -539,18 +554,20 @@ const Q=[
       ['Solo feedback informal y conversacional','Only informal conversational feedback'],
       ['Han encuestado 1-2 clientes de forma esporádica','Have surveyed 1-2 clients sporadically'],
       ['Usan NPS o CSAT de forma sistemática','Use NPS or CSAT systematically'],
-      ['Sistema formal de satisfacción con acciones de mejora','Formal satisfaction system with improvement actions']],
+      ['Sistema formal con acciones de mejora y seguimiento','Formal system with improvement actions and follow-up'],
+      ['Programa de éxito del cliente consolidado, reportes periódicos','Consolidated customer success program, periodic reports']],
    w:8,t:'maturity'},
 
   // C6: Post-proyecto → añadir N/A + bajar peso 10→8
   {b:'Delivery & CS',r:'PM',
    es:'¿Tienen una estrategia de seguimiento y retención con clientes después de cerrar un proyecto?',
    en:'Do they have a follow-up and retention strategy with clients after closing a project?',
-   o:[['N/A – Sin proyectos cerrados suficientes aun','N/A – Not enough closed projects yet'],
+   o:[['N/A – Sin proyectos cerrados suficientes aún','N/A – Not enough closed projects yet'],
       ['Nada formal, cada proyecto termina y se desconectan','Nothing formal, each project ends and they disconnect'],
-      ['Soporte reactivo basico cuando el cliente contacta','Basic reactive support when client reaches out'],
+      ['Soporte reactivo básico cuando el cliente contacta','Basic reactive support when client reaches out'],
       ['Soporte con SLAs definidos y contratos de mantenimiento','Support with defined SLAs and maintenance contracts'],
-      ['Estrategia activa de upsell, expansion de modulos y revisiones','Active upsell strategy, module expansion and periodic reviews']],
+      ['Estrategia activa de upsell y expansión de módulos','Active upsell strategy and module expansion'],
+      ['Customer success program consolidado con revisión trimestral','Consolidated customer success program with quarterly review']],
    w:8,t:'maturity'},
 
   // ── COMPROMISO ── PM ──────────────────────────────────────────────
@@ -567,11 +584,12 @@ const Q=[
   {b:'Compromiso',r:'PM',
    es:'¿Han participado en iniciativas de co-sell o co-marketing con Odoo?',
    en:'Have they participated in co-sell or co-marketing initiatives with Odoo?',
-   o:[['N/A – Aun construyendo la capacidad basica','N/A – Still building basic capacity'],
-      ['Nos interesa pero no hemos hecho nada aun','Interested but have not done anything yet'],
+   o:[['N/A – Aún construyendo la capacidad básica','N/A – Still building basic capacity'],
+      ['Nos interesa pero no hemos hecho nada aún','Interested but have not done anything yet'],
       ['Hemos hecho 1 piloto o iniciativa conjunta','Have done 1 pilot or joint initiative'],
-      ['2-3 iniciativas activas en el anio','2-3 active initiatives in the year'],
-      ['Colaboracion continua y recurrente con Odoo','Continuous and recurring collaboration with Odoo']],
+      ['2-3 iniciativas activas en el año','2-3 active initiatives in the year'],
+      ['Colaboración continua y recurrente con Odoo','Continuous and recurring collaboration with Odoo'],
+      ['Socio estratégico consolidado, múltiples iniciativas y pipeline compartido','Consolidated strategic partner, multiple initiatives and shared pipeline']],
    w:6,t:'aspiration'},
 
   {b:'Compromiso',r:'PM',
@@ -587,11 +605,12 @@ const Q=[
   {b:'Compromiso',r:'PM',
    es:'¿Están planeando contratar más personas para su práctica de Odoo?',
    en:'Are they planning to hire more people for their Odoo practice?',
-   o:[['N/A – Están en tamaño estable y no hay planes','N/A – At stable size with no plans'],
+   o:[['N/A – Están en tamaño estable por decisión estratégica','N/A – At stable size by strategic decision'],
       ['Solo lo están pensando sin nada concreto','Just thinking about it, nothing concrete'],
       ['Lo planean para el próximo año','Planning it for next year'],
       ['Ya están buscando candidatos activamente','Already actively searching for candidates'],
-      ['Contratando ahora mismo, proceso abierto','Hiring right now, open process']],
+      ['Contratando ahora mismo, proceso abierto','Hiring right now, open process'],
+      ['Crecimiento acelerado, múltiples posiciones abiertas simultáneamente','Accelerated growth, multiple positions open simultaneously']],
    w:6,t:'maturity'},
 
   // ── CLIENTES & RETENCIÓN ── PM ────────────────────────────────────
@@ -602,27 +621,30 @@ const Q=[
       ['1-2 clientes','1-2 clients'],
       ['3-5 clientes','3-5 clients'],
       ['6-10 clientes','6-10 clients'],
-      ['Más de 10 clientes activos','More than 10 active clients']],
+      ['11-20 clientes activos','11-20 active clients'],
+      ['Más de 20 clientes Enterprise activos','More than 20 active Enterprise clients']],
    w:8,t:'maturity'},
 
   {b:'Clientes & Retención',r:'PM',
    es:'¿Cuál es su retention rate aproximado de clientes Odoo año a año?',
    en:'What is their approximate Odoo client retention rate year over year?',
    o:[['N/A – Sin datos suficientes todavía','N/A – Not enough data yet'],
-      ['Menos del 70%, alta rotación','Less than 70%, high turnover'],
-      ['70-85%','70-85%'],
-      ['85-95%','85-95%'],
-      ['Más del 95%, muy alta retención','More than 95%, very high retention']],
+      ['Menos del 70%, rotación preocupante','Less than 70%, concerning turnover'],
+      ['70-80%, por debajo del promedio','70-80%, below average'],
+      ['80-90%, nivel aceptable','80-90%, acceptable level'],
+      ['90-95%, muy buena retención','90-95%, very good retention'],
+      ['Más del 95%, retención excepcional','More than 95%, exceptional retention']],
    w:8,t:'maturity'},
 
   {b:'Clientes & Retención',r:'PM',
    es:'¿Han migrado clientes de Odoo Community a Enterprise?',
    en:'Have they migrated clients from Odoo Community to Enterprise?',
    o:[['N/A – No aplica a su modelo de negocio actual','N/A – Does not apply to their current business model'],
-      ['Ninguna migracion realizada','No migrations done'],
+      ['Ninguna migración realizada','No migrations done'],
       ['1-2 migraciones','1-2 migrations'],
       ['3-5 migraciones','3-5 migrations'],
-      ['6 o mas migraciones exitosas','6 or more successful migrations']],
+      ['6-10 migraciones exitosas','6-10 successful migrations'],
+      ['Más de 10 migraciones, proceso estandarizado','More than 10 migrations, standardized process']],
    w:6,t:'aspiration'},
 
   {b:'Clientes & Retención',r:'PM',
@@ -643,7 +665,8 @@ const Q=[
       ['No, 100% ingresos por proyectos puntuales','No, 100% revenue from one-time projects'],
       ['Algo esporádico, menos del 10% de sus ingresos','Something sporadic, less than 10% of revenue'],
       ['10-30% de sus ingresos son recurrentes','10-30% of revenue is recurring'],
-      ['Más del 30% de ingresos son recurrentes y creciendo','More than 30% recurring revenue and growing']],
+      ['30-50% de ingresos recurrentes, modelo híbrido sólido','30-50% recurring revenue, solid hybrid model'],
+      ['Más del 50% recurrentes, modelo MRR consolidado','More than 50% recurring, consolidated MRR model']],
    w:10,t:'maturity'},
 
   // NUEVA C9: Casos de éxito → PM, Clientes & Retención
@@ -654,7 +677,8 @@ const Q=[
       ['No, nada documentado','No, nothing documented'],
       ['Algunos testimonios informales pero nada formal','Some informal testimonials but nothing formal'],
       ['1-2 casos de éxito documentados','1-2 documented success cases'],
-      ['3 o más casos documentados y referencias disponibles','3 or more documented cases and available references']],
+      ['3-5 casos documentados con referencias disponibles','3-5 documented cases with available references'],
+      ['6 o más casos documentados, video-testimonios o publicados en Odoo.com','6+ documented cases, video testimonials or published on Odoo.com']],
    w:8,t:'maturity'},
 
   // ── EXPANSIÓN ── PM ───────────────────────────────────────────────
@@ -665,7 +689,8 @@ const Q=[
       ['Solo local, sin planes de expansión','Only local, no expansion plans'],
       ['Les interesa expandir pero sin plan concreto','Interested in expanding but no concrete plan'],
       ['Planeando activamente la expansión a otro país','Actively planning expansion to another country'],
-      ['Ya operan en 2 o más países','Already operating in 2 or more countries']],
+      ['Ya operan en 2-3 países','Already operating in 2-3 countries'],
+      ['Operan en 4 o más países, presencia regional consolidada','Operating in 4+ countries, consolidated regional presence']],
    w:6,t:'aspiration'},
 
   // ── RIESGOS & ALERTAS ── Ambos ────────────────────────────────────
@@ -674,9 +699,10 @@ const Q=[
    en:'Do they overly depend on 1 or 2 large clients for their billing?',
    o:[['N/A – Sin clientes todavía, no aplica','N/A – No clients yet, does not apply'],
       ['Sí, 1-2 clientes representan más del 80% de sus ingresos','Yes, 1-2 clients represent more than 80% of revenue'],
-      ['40-80% en pocos clientes, riesgo moderado-alto','40-80% in few clients, moderate-high risk'],
+      ['60-80% en pocos clientes, riesgo alto','60-80% in few clients, high risk'],
+      ['40-60%, concentración media','40-60%, medium concentration'],
       ['20-40%, razonablemente diversificado','20-40%, reasonably diversified'],
-      ['Menos del 20% en cualquier cliente, bien diversificado','Less than 20% in any client, well diversified']],
+      ['Menos del 20% en cualquier cliente, cartera bien diversificada','Less than 20% in any client, well diversified portfolio']],
    w:5,t:'maturity'},
 
   {b:'Riesgos & Alertas',r:'Ambos',
@@ -684,9 +710,10 @@ const Q=[
    en:'What is their talent turnover in the Odoo team?',
    o:[['N/A – Equipo muy nuevo o muy pequeño, sin historial suficiente','N/A – Team too new or too small, no sufficient history'],
       ['Muy alta, más del 30% anual — inestabilidad crítica','Very high, more than 30% annual — critical instability'],
-      ['Alta o media, 10-30% anual — señal de atención','High or medium, 10-30% annual — attention signal'],
+      ['Alta, 20-30% anual — señal de alerta','High, 20-30% annual — warning signal'],
+      ['Media, 10-20% — rotación manejable','Medium, 10-20% — manageable turnover'],
       ['Baja, 5-10% — equipo razonablemente estable','Low, 5-10% — reasonably stable team'],
-      ['Muy baja, menos del 5% — equipo muy sólido','Very low, less than 5% — very solid team']],
+      ['Muy baja, menos del 5% — equipo muy sólido y fidelizado','Very low, less than 5% — very solid and loyal team']],
    w:5,t:'maturity'},
 
   {b:'Riesgos & Alertas',r:'Ambos',
@@ -852,7 +879,7 @@ function renderForm(savedData){
         const naText=currentLang==='es'?q.o[0][0]:q.o[0][1];
         const naChk=savedAns==='NA';
         optHTML+=`<label class="radio-label na-label${naChk?' selected':''}"><input type="radio" name="${qId}" value="NA"${naChk?' checked':''}/><span class="opt-text text-xs text-gray-500 font-bold">N/A</span><span class="text-xs text-gray-400 hidden sm:inline ml-1">– ${naText.replace(/^N\/A\s*[–-]\s*/,'')}</span></label>`;
-        for(let i=1;i<=4;i++){
+        for(let i=1;i<=5;i++){
           const optText=currentLang==='es'?q.o[i][0]:q.o[i][1];
           const chk=savedAns==i;
           optHTML+=`<label class="radio-label${chk?' selected':''}"><input type="radio" name="${qId}" value="${i}"${chk?' checked':''}/><span class="opt-text text-xs font-bold text-[#714B67] min-w-[14px]">${i}</span><span class="text-xs text-gray-600">${optText}</span></label>`;
@@ -1015,7 +1042,7 @@ function recalculate(){
         if(val==='NA'){answeredCount++;return;}
         answeredCount++;answered=true;
         const num=parseInt(val);
-        const maxVal=qDiv.dataset.qtype==='core'?5:4;
+        const maxVal=5;
         const ws=(num/maxVal)*weight;
         totalScore+=ws;totalWeight+=weight;
         blockTotal+=ws;blockWeight+=weight;
@@ -1306,10 +1333,14 @@ document.getElementById('btnPDF').addEventListener('click',()=>{
     const isNA=val==='NA';
     const isBad=!isNA&&parseInt(val)<=2;
     row.style.background=isBad?'#fff1f2':isNA?'#f8fafc':'white';
+    // Get the selected option's description text from the label
+    const selLabel=qDiv.querySelector(`label.radio-label.selected .text-xs.text-gray-600`);
+    const optionText=isNA?'N/A':(selLabel?selLabel.textContent.trim():'—');
     row.innerHTML=`<td style="padding:4px 5px;border:1px solid #ddd">${qDiv.dataset.block}</td>
       <td style="padding:4px 5px;border:1px solid #ddd">${qDiv.dataset.role}</td>
       <td style="padding:4px 5px;border:1px solid #ddd">${qDiv.querySelector('.question-text').textContent}</td>
       <td style="padding:4px 5px;border:1px solid #ddd;text-align:center;font-weight:bold;color:${isNA?'#64748b':isBad?'#dc2626':'#16a34a'}">${val}</td>
+      <td style="padding:4px 5px;border:1px solid #ddd;font-style:italic;color:#374151">${optionText}</td>
       <td style="padding:4px 5px;border:1px solid #ddd">${qDiv.querySelector('textarea').value||'—'}</td>`;
     tbody.appendChild(row);
   });
@@ -1339,11 +1370,14 @@ document.getElementById('btnXLSX').addEventListener('click',()=>{
     ['Date',new Date().toLocaleString()],[''],['Action Plan:']];
   document.getElementById('actionPlanList').querySelectorAll('span:last-child').forEach(a=>summary.push(['• ',a.textContent]));
 
-  const rows=[['Bloque','Rol','Pregunta','Peso','Score','Tipo','Comentario PM']];
+  const rows=[['Bloque','Rol','Pregunta','Peso','Score','Opción elegida','Tipo','Comentario PM']];
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
     const sel=qDiv.querySelector('input[type="radio"]:checked');
     if(!sel) return;
-    rows.push([qDiv.dataset.block,qDiv.dataset.role,qDiv.querySelector('.question-text').textContent,qDiv.dataset.weight,sel.value,qDiv.dataset.qtype,qDiv.querySelector('textarea').value||'']);
+    const xIsNA=sel.value==='NA';
+    const xSelLabel=qDiv.querySelector('label.radio-label.selected .text-xs.text-gray-600');
+    const xOptText=xIsNA?'N/A':(xSelLabel?xSelLabel.textContent.trim():'—');
+    rows.push([qDiv.dataset.block,qDiv.dataset.role,qDiv.querySelector('.question-text').textContent,qDiv.dataset.weight,sel.value,xOptText,qDiv.dataset.qtype,qDiv.querySelector('textarea').value||'']);
   });
 
   // Weight sheet
