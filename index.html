@@ -9,741 +9,459 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     @media print{.no-print{display:none!important}}
-    body{padding-bottom:130px;font-family:'Segoe UI',system-ui,sans-serif}
+    body{padding-bottom:140px;font-family:'Segoe UI',system-ui,sans-serif;background:#f4f0f3}
 
-    /* Radio labels — full click area */
-    .radio-label{display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 10px;border-radius:6px;border:1px solid transparent;transition:background .15s,border-color .15s;user-select:none}
-    .radio-label:hover{background:#f3f4f6;border-color:#d1d5db}
-    .radio-label input{accent-color:#714B67;width:15px;height:15px;flex-shrink:0;cursor:pointer}
-    .radio-label.selected{background:#f5f0f4;border-color:#714B67}
-    .radio-label.selected .opt-text{color:#714B67;font-weight:700}
-    .radio-label.na-label{background:#f9fafb;border:1px dashed #d1d5db}
-    .radio-label.na-label:hover{background:#f1f5f9;border-color:#94a3b8}
-    .radio-label.na-label.selected{background:#e2e8f0;border-color:#64748b}
+    /* ── OPTION CARDS ── */
+    .opt-card{
+      display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+      padding:10px 14px;border-radius:10px;border:2px solid #e5e7eb;
+      transition:all .18s ease;user-select:none;background:white;
+      position:relative;width:100%;
+    }
+    .opt-card:hover{border-color:#b08fa8;background:#fdf8fc;transform:translateY(-1px);box-shadow:0 2px 8px rgba(113,75,103,.12)}
+    .opt-card input[type=radio]{display:none}
+    .opt-num{
+      width:28px;height:28px;border-radius:50%;border:2px solid #d1d5db;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:700;color:#6b7280;flex-shrink:0;
+      transition:all .18s;background:white;margin-top:1px;
+    }
+    .opt-card:hover .opt-num{border-color:#714B67;color:#714B67}
+    .opt-card.selected{border-color:#714B67;background:#fdf4fb}
+    .opt-card.selected .opt-num{background:#714B67;border-color:#714B67;color:white}
+    .opt-card.selected .opt-label{color:#3d1f36;font-weight:600}
+    .opt-card.na-card{border-style:dashed;border-color:#cbd5e1;background:#f8fafc}
+    .opt-card.na-card:hover{border-color:#94a3b8;background:#f1f5f9}
+    .opt-card.na-card.selected{border-color:#64748b;background:#e8edf2;border-style:solid}
+    .opt-card.na-card.selected .opt-num{background:#64748b;border-color:#64748b;color:white}
 
-    /* Red flag row */
-    .red-flag-row{background:#fff1f2;border-left:3px solid #f43f5e}
+    /* Score color coding on selected */
+    .opt-card.score-1.selected{border-color:#ef4444;background:#fff5f5}
+    .opt-card.score-1.selected .opt-num{background:#ef4444;border-color:#ef4444}
+    .opt-card.score-2.selected{border-color:#f97316;background:#fff7ed}
+    .opt-card.score-2.selected .opt-num{background:#f97316;border-color:#f97316}
+    .opt-card.score-3.selected{border-color:#eab308;background:#fefce8}
+    .opt-card.score-3.selected .opt-num{background:#eab308;border-color:#eab308}
+    .opt-card.score-4.selected{border-color:#22c55e;background:#f0fdf4}
+    .opt-card.score-4.selected .opt-num{background:#22c55e;border-color:#22c55e}
+    .opt-card.score-5.selected{border-color:#16a34a;background:#dcfce7}
+    .opt-card.score-5.selected .opt-num{background:#16a34a;border-color:#16a34a}
+    .opt-label{font-size:13px;color:#374151;line-height:1.4;flex:1}
 
-    /* Comment validation states */
-    .comment-field{transition:border-color .2s,box-shadow .2s}
-    .comment-field.valid{border-color:#16a34a!important;box-shadow:0 0 0 2px rgba(22,163,74,.1)}
-    .comment-field.invalid{border-color:#dc2626!important;box-shadow:0 0 0 2px rgba(220,38,38,.1)}
-    .comment-required-badge{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px}
-    .comment-counter{font-size:10px;color:#9ca3af;text-align:right;margin-top:2px}
-    .comment-counter.ok{color:#16a34a}
-    .comment-counter.warn{color:#dc2626;font-weight:600}
+    /* ── QUESTION CARD ── */
+    .q-card{
+      background:white;border-radius:14px;border:1.5px solid #e9e3ee;
+      padding:20px;margin-bottom:10px;transition:all .2s;
+    }
+    .q-card:hover{border-color:#c9aed8;box-shadow:0 2px 12px rgba(113,75,103,.08)}
+    .q-card.red-flag-row{background:#fff5f5;border-color:#fca5a5;border-left:4px solid #ef4444}
+    .q-card.answered-ok{border-color:#bbf7d0}
+    .q-num{
+      width:26px;height:26px;border-radius:50%;background:#f3e8f0;
+      color:#714B67;font-size:11px;font-weight:800;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
 
-    /* Progress */
-    #progressBar{transition:width .4s ease}
-    .block-body{transition:max-height .3s ease;overflow:hidden}
-    #progressStrip{background:#f8f4f7;border-bottom:1px solid #e9e3ee}
+    /* ── COMMENT AREA ── */
+    .comment-wrap{margin-top:14px;padding-top:14px;border-top:1px solid #f0e8ef}
+    /* Base required state — overridden by score-specific variants below */
+    .comment-wrap.required-comment{
+      background:#fffbeb;border-radius:10px;padding:12px;
+      border:2px solid #fbbf24;margin-top:12px;
+    }
+    /* Score 1 — red */
+    .comment-wrap.req-score-1{background:#fff5f5;border:2px solid #ef4444;border-radius:10px;padding:12px;margin-top:12px}
+    .comment-wrap.req-score-1 .comment-label-status{color:#ef4444}
+    /* Score 2 — orange */
+    .comment-wrap.req-score-2{background:#fff7ed;border:2px solid #f97316;border-radius:10px;padding:12px;margin-top:12px}
+    .comment-wrap.req-score-2 .comment-label-status{color:#ea580c}
+    /* N/A required — slate blue */
+    .comment-wrap.req-na{background:#f1f5f9;border:2px solid #64748b;border-radius:10px;padding:12px;margin-top:12px}
+    .comment-wrap.req-na .comment-label-status{color:#475569}
+    /* Completed — green for all */
+    .comment-wrap.req-score-1.filled,.comment-wrap.req-score-2.filled,.comment-wrap.req-na.filled{
+      background:#f0fdf4;border-color:#22c55e;
+    }
+    .comment-wrap.req-score-1.filled .comment-label-status,
+    .comment-wrap.req-score-2.filled .comment-label-status,
+    .comment-wrap.req-na.filled .comment-label-status{color:#16a34a}
+    /* Error state */
+    .comment-wrap.req-score-1.error,.comment-wrap.req-score-2.error,.comment-wrap.req-na.error{border-color:#dc2626}
+    /* Legacy */
+    .comment-wrap.required-comment.filled{border-color:#86efac;background:#f0fdf4}
+    .comment-wrap.required-comment.error{border-color:#fca5a5;background:#fff5f5}
+    .comment-field{
+      width:100%;border:1.5px solid #e5e7eb;border-radius:8px;
+      padding:9px 12px;font-size:13px;resize:none;outline:none;
+      transition:border-color .2s,box-shadow .2s;color:#374151;
+      font-family:inherit;
+    }
+    .comment-field:focus{border-color:#714B67;box-shadow:0 0 0 3px rgba(113,75,103,.1)}
+    .comment-field.valid{border-color:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.1)}
+    .comment-field.invalid{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.1)}
+    .comment-counter{font-size:11px;color:#9ca3af;text-align:right;margin-top:4px;font-weight:500}
+    .comment-counter.ok{color:#16a34a;font-weight:700}
+    .comment-counter.warn{color:#ef4444;font-weight:700}
 
-    /* Export buttons lock state */
-    .btn-locked{opacity:.45;cursor:not-allowed!important;pointer-events:none}
-    .btn-locked-msg{font-size:11px;color:#dc2626;font-weight:500}
+    /* ── BLOCK HEADER ── */
+    .block-header{
+      background:linear-gradient(135deg,#714B67 0%,#5a3a52 100%);
+      color:white;padding:14px 20px;border-radius:14px 14px 0 0;
+      cursor:pointer;user-select:none;
+    }
+    .block-header:hover{background:linear-gradient(135deg,#5a3a52 0%,#4a2f43 100%)}
+    .block-card{border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(113,75,103,.1);margin-bottom:16px}
+    .block-body{transition:max-height .35s ease;overflow:hidden}
+    .block-score-pill{
+      padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;
+      background:rgba(255,255,255,.2);backdrop-filter:blur(4px);
+    }
+    .block-prog-text{font-size:11px;opacity:.75;font-weight:600}
+    .block-mini-bar{height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;width:80px}
+    .block-mini-fill{height:100%;background:rgba(255,255,255,.8);border-radius:2px;transition:width .4s}
+    .block-rf-pill{
+      background:rgba(239,68,68,.35);color:#fecaca;
+      padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;
+    }
 
-    /* Autosave badge */
+    /* ── PROGRESS ── */
+    #progressBar{transition:width .5s ease}
+    #globalProgressStrip{background:rgba(0,0,0,.15);border-top:1px solid rgba(255,255,255,.1)}
+
+    /* ── EXPORT LOCK ── */
+    .btn-locked{opacity:.4;cursor:not-allowed!important;pointer-events:none;filter:grayscale(.4)}
+
+    /* ── BADGES / PILLS ── */
+    .role-pill-recruiter{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+    .role-pill-pm{background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe}
+    .role-pill-ambos{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+    .type-badge{
+      display:inline-block;padding:2px 8px;border-radius:6px;
+      font-size:10px;font-weight:700;letter-spacing:.3px;
+    }
+    .type-core{background:#dbeafe;color:#1e40af}
+    .type-maturity{background:#ede9fe;color:#5b21b6}
+    .type-aspiration{background:#fef9c3;color:#713f12}
+
+    /* ── RESULTS PANEL ── */
+    #resultsSummary{transition:all .3s}
+    .score-ring{
+      width:90px;height:90px;border-radius:50%;
+      border:6px solid rgba(255,255,255,.3);
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+      background:rgba(255,255,255,.1);
+    }
+
+    /* ── AUTOSAVE ── */
     #autosaveBadge{transition:opacity .5s}
 
-    /* Block badge (progress per block) */
-    .block-progress-badge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,.2)}
-    .block-rf-badge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(244,63,94,.3);color:#fecdd3}
+    /* ── REQUIRED BANNER ── */
+    .na-required-note{
+      display:flex;align-items:center;gap:6px;
+      font-size:11px;color:#92400e;font-weight:600;
+      background:#fef3c7;border:1px solid #fde68a;
+      border-radius:6px;padding:5px 10px;margin-bottom:8px;
+    }
   </style>
 </head>
-<body class="bg-gray-50 text-slate-800">
+<body>
 
-<!-- HEADER -->
-<header class="bg-[#714B67] text-white shadow sticky top-0 z-20">
+<!-- ═══ HEADER ═══ -->
+<header class="bg-[#714B67] text-white shadow-lg sticky top-0 z-20 no-print">
   <div class="max-w-7xl mx-auto px-4 py-3">
-    <div class="flex items-center gap-3 flex-wrap justify-between">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
-        <h1 class="text-base md:text-lg font-semibold tracking-tight" id="mainTitle">Odoo Partner Qualification 360°</h1>
-        <span id="autosaveBadge" class="text-xs opacity-0 bg-white/20 px-2 py-0.5 rounded-full">💾 guardado</span>
+        <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center text-lg">🎯</div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight leading-none" id="mainTitle">Odoo Partner Qualification 360°</h1>
+          <p class="text-xs opacity-60 mt-0.5">Evaluación de calidad de partners</p>
+        </div>
+        <span id="autosaveBadge" class="text-xs opacity-0 bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">💾 <span>guardado</span></span>
       </div>
-      <div class="flex items-center gap-2 text-xs flex-wrap">
-        <button id="langToggle" class="px-2.5 py-1 bg-white/20 rounded hover:bg-white/30 transition font-medium text-xs">🌐 <span id="langText">ES</span></button>
-        <div class="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
-          <span id="labelType" class="opacity-70">Tipo:</span>
-          <span id="badgeType" class="font-semibold">—</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="langToggle" class="px-3 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition font-semibold text-xs flex items-center gap-1">🌐 <span id="langText">ES</span></button>
+        <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-3 py-1.5 border border-white/10">
+          <span class="text-xs opacity-60" id="labelType">Tipo:</span>
+          <span id="badgeType" class="font-bold text-sm">—</span>
         </div>
-        <div class="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
-          <span id="labelSubcat" class="opacity-70">Subcat:</span>
-          <span id="badgeSubcat" class="font-semibold">—</span>
+        <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-3 py-1.5 border border-white/10">
+          <span class="text-xs opacity-60" id="labelSubcat">Subcat:</span>
+          <span id="badgeSubcat" class="font-semibold text-xs">—</span>
         </div>
-        <div class="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
-          <span id="labelTotal" class="opacity-70">Score:</span>
-          <span id="badgeScore" class="font-semibold">—</span>
-          <span class="opacity-40">/5</span>
+        <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-3 py-1.5 border border-white/10">
+          <span class="text-xs opacity-60" id="labelTotal">Score:</span>
+          <span id="badgeScore" class="font-bold text-base">—</span>
+          <span class="text-xs opacity-40">/5</span>
         </div>
-        <div class="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
-          <span>🚩</span><span id="badgeRF" class="font-semibold">0</span>
+        <div class="flex items-center gap-1 bg-red-500/20 rounded-lg px-3 py-1.5 border border-red-400/20">
+          <span>🚩</span>
+          <span id="badgeRF" class="font-bold">0</span>
+          <span class="text-xs opacity-60">flags</span>
         </div>
       </div>
     </div>
   </div>
-  <div id="progressStrip" class="px-4 py-1.5">
+  <!-- Global progress -->
+  <div id="globalProgressStrip" class="px-4 py-2">
     <div class="max-w-7xl mx-auto flex items-center gap-3">
-      <div class="flex-1 bg-white/20 rounded-full h-1.5 overflow-hidden">
+      <div class="flex-1 bg-white/15 rounded-full h-2 overflow-hidden">
         <div id="progressBar" class="h-full bg-white rounded-full" style="width:0%"></div>
       </div>
-      <span id="progressText" class="text-xs text-white/70 whitespace-nowrap">0 / 0</span>
+      <span id="progressText" class="text-xs font-semibold text-white/70 whitespace-nowrap min-w-[70px] text-right">0 / 0 respondidas</span>
     </div>
   </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-4 py-5">
+<main class="max-w-7xl mx-auto px-4 py-6">
 
-  <!-- META -->
-  <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+  <!-- ═══ META INFO ═══ -->
+  <section class="bg-white rounded-2xl shadow-sm border border-purple-100 p-5 mb-6">
+    <h2 class="text-sm font-bold text-[#714B67] uppercase tracking-wider mb-4 flex items-center gap-2">
+      <span class="w-5 h-5 bg-[#714B67] rounded-md flex items-center justify-center text-white text-xs">📋</span>
+      Información del partner
+    </h2>
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div>
-        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1" id="labelPartnerName">Partner Name *</label>
-        <input id="partnerName" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#714B67] focus:border-transparent outline-none" placeholder="e.g. ERP Mexico"/>
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5" id="labelPartnerName">Nombre del Partner *</label>
+        <input id="partnerName" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-0 focus:border-[#714B67] outline-none transition" placeholder="ej. ERP Mexico"/>
       </div>
       <div>
-        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1" id="labelPartnerManager">Salesperson *</label>
-        <input id="partnerManager" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#714B67] focus:border-transparent outline-none" placeholder="e.g. Alnu"/>
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5" id="labelPartnerManager">Salesperson *</label>
+        <input id="partnerManager" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-0 focus:border-[#714B67] outline-none transition" placeholder="ej. Alnu"/>
       </div>
       <div>
-        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1" id="labelRoleMode">Role Filter</label>
-        <select id="roleMode" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#714B67] outline-none">
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5" id="labelRoleMode">Filtro por Rol</label>
+        <select id="roleMode" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-0 focus:border-[#714B67] outline-none transition bg-white">
           <option value="all" id="optAll">Ver Todo</option>
           <option value="Recruiter" id="optRecruiter">Recruiter + Compartidas</option>
           <option value="PM" id="optPM">PM + Compartidas</option>
         </select>
       </div>
       <div>
-        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1" id="labelSearch">Búsqueda</label>
-        <input id="searchBox" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#714B67] focus:border-transparent outline-none" placeholder="Filtrar..."/>
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5" id="labelSearch">Búsqueda rápida</label>
+        <input id="searchBox" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-0 focus:border-[#714B67] outline-none transition" placeholder="Filtrar preguntas..."/>
       </div>
     </div>
-    <div class="mt-3 flex flex-col sm:flex-row gap-2">
-      <p class="flex-1 text-xs text-gray-500 bg-blue-50 border border-blue-100 p-2 rounded-lg">
-        💡 <strong id="noteLabel">Nota:</strong> <span id="noteText">Selecciona N/A solo si genuinamente no aplica. Las respuestas con score ≤ 3 y N/A requieren comentario de al menos 15 caracteres con contexto real.</span>
-      </p>
-      <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg">
-        ✍️ <strong>Comentarios obligatorios</strong> en score ≤ 3 y N/A. Mínimo 15 caracteres de contexto real.
-      </p>
-    </div>
-  </section>
-
-  <!-- RESULTS SUMMARY -->
-  <section id="resultsSummary" class="mt-5 bg-gradient-to-r from-[#714B67] to-[#5a3a52] text-white p-5 rounded-2xl shadow-lg hidden">
-    <div class="grid md:grid-cols-2 gap-5">
-      <div>
-        <h3 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2" id="resultsTitle">Clasificación</h3>
-        <div class="flex items-baseline gap-2 mb-1">
-          <span class="text-4xl font-bold" id="displayScore">—</span>
-          <span class="text-lg opacity-50">/5.0</span>
-        </div>
-        <div class="text-xl font-semibold" id="displayCategory">—</div>
-        <div class="text-sm opacity-75 mt-0.5" id="displaySubcategory">—</div>
-        <div class="mt-3 bg-white/20 rounded-full h-2 overflow-hidden">
-          <div id="scoreBar" class="h-full bg-white rounded-full transition-all duration-500" style="width:0%"></div>
-        </div>
+    <!-- Info strip -->
+    <div class="mt-4 grid sm:grid-cols-2 gap-3">
+      <div class="flex items-start gap-2.5 bg-blue-50 border border-blue-100 rounded-xl p-3">
+        <span class="text-blue-500 mt-0.5 flex-shrink-0">💡</span>
+        <p class="text-xs text-blue-700"><strong id="noteLabel">Nota:</strong> <span id="noteText">Selecciona N/A solo si genuinamente no aplica. Scores ≤ 2 y ciertos N/A requieren comentario obligatorio.</span></p>
       </div>
-      <div>
-        <h4 class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-2" id="actionPlanTitle">Plan de Acción</h4>
-        <div id="actionPlanList" class="space-y-1.5 text-xs"></div>
+      <div class="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
+        <span class="text-amber-500 mt-0.5 flex-shrink-0">✍️</span>
+        <p class="text-xs text-amber-800"><strong>Comentarios obligatorios:</strong> score ≤ 2 y N/A en preguntas clave. Mínimo 15 caracteres de contexto real.</p>
       </div>
     </div>
   </section>
 
-  <!-- EXPORT BLOCKER BANNER -->
-  <div id="exportBlockerBanner" class="mt-4 hidden">
-    <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-3">
-      <span class="text-amber-500 text-lg flex-shrink-0">⚠️</span>
+  <!-- ═══ RESULTS ═══ -->
+  <section id="resultsSummary" class="hidden mb-6">
+    <div class="bg-gradient-to-br from-[#714B67] via-[#5a3a52] to-[#3d2038] text-white rounded-2xl shadow-xl p-6">
+      <div class="grid md:grid-cols-5 gap-6">
+        <!-- Score -->
+        <div class="md:col-span-2 flex items-center gap-5">
+          <div class="score-ring flex-shrink-0">
+            <span class="text-3xl font-black" id="displayScore">—</span>
+            <span class="text-xs opacity-60 font-semibold">/5.0</span>
+          </div>
+          <div>
+            <p class="text-xs opacity-60 uppercase tracking-wider mb-1" id="resultsTitle">Clasificación</p>
+            <p class="text-2xl font-black" id="displayCategory">—</p>
+            <p class="text-sm opacity-75 font-semibold mt-0.5" id="displaySubcategory">—</p>
+            <div class="mt-3 bg-white/20 rounded-full h-2 w-full overflow-hidden">
+              <div id="scoreBar" class="h-full bg-white rounded-full transition-all duration-700" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Block scores -->
+        <div class="md:col-span-2" id="blockScoresPanel">
+          <p class="text-xs opacity-60 uppercase tracking-wider mb-3">Score por bloque</p>
+          <div id="blockScoresList" class="space-y-1.5 text-xs"></div>
+        </div>
+        <!-- Action plan -->
+        <div class="md:col-span-1">
+          <p class="text-xs opacity-60 uppercase tracking-wider mb-2" id="actionPlanTitle">Plan de Acción</p>
+          <div id="actionPlanList" class="space-y-1.5"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ EXPORT BLOCKER ═══ -->
+  <div id="exportBlockerBanner" class="hidden mb-4">
+    <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex items-start gap-3">
+      <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">⚠️</div>
       <div>
-        <p class="text-sm font-semibold text-amber-800" id="blockerTitle">No se puede exportar todavía</p>
-        <p class="text-xs text-amber-700 mt-0.5" id="blockerDetail"></p>
+        <p class="text-sm font-bold text-amber-900" id="blockerTitle">No se puede exportar todavía</p>
+        <p class="text-xs text-amber-700 mt-1" id="blockerDetail"></p>
       </div>
     </div>
   </div>
 
-  <!-- FORM -->
-  <section id="formRoot" class="mt-5 space-y-4"></section>
+  <!-- ═══ FORM ═══ -->
+  <section id="formRoot" class="space-y-0"></section>
 
 </main>
 
-<!-- FOOTER -->
-<footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20 no-print">
+<!-- ═══ FOOTER ═══ -->
+<footer class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-purple-100 shadow-xl z-20 no-print">
   <div class="max-w-7xl mx-auto px-4 py-3">
     <div class="flex flex-col md:flex-row justify-between items-center gap-2">
-      <div class="flex items-center gap-4 text-sm text-gray-700">
-        <span><strong id="footerLabelTotal">Total:</strong> <span id="footerScore" class="text-[#714B67] font-bold text-base">—</span> <span class="text-gray-400 text-xs">/5.0</span></span>
-        <span class="text-gray-200">|</span>
-        <span><strong id="footerLabelType">Tipo:</strong> <span id="footerType" class="font-medium">—</span></span>
-        <span class="text-gray-200">|</span>
-        <span>🚩 <span id="footerRF" class="text-red-600 font-medium">0</span> <span id="footerRFLabel" class="text-gray-400 text-xs">flags</span></span>
+      <div class="flex items-center gap-4 text-sm">
+        <span class="flex items-center gap-1.5"><strong id="footerLabelTotal" class="text-gray-500 text-xs uppercase">Score:</strong> <span id="footerScore" class="text-[#714B67] font-black text-lg">—</span> <span class="text-gray-300 text-xs">/5.0</span></span>
+        <span class="text-gray-200 hidden sm:block">|</span>
+        <span class="hidden sm:flex items-center gap-1.5"><strong id="footerLabelType" class="text-gray-500 text-xs uppercase">Tipo:</strong> <span id="footerType" class="font-bold text-gray-700">—</span></span>
+        <span class="text-gray-200 hidden sm:block">|</span>
+        <span class="flex items-center gap-1">🚩 <span id="footerRF" class="text-red-500 font-bold">0</span> <span id="footerRFLabel" class="text-gray-400 text-xs">flags</span></span>
       </div>
-      <div class="flex items-center gap-2">
-        <button id="btnClear" class="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-600 transition">🗑️ <span id="btnClearText">Limpiar</span></button>
-        <div class="relative group">
-          <button id="btnXLSX" class="px-3 py-2 bg-green-50 text-green-800 border border-green-200 rounded-lg hover:bg-green-100 text-sm font-medium transition">📊 Excel</button>
-        </div>
-        <div class="relative group">
-          <button id="btnPDF" class="px-4 py-2 bg-[#714B67] text-white rounded-lg hover:bg-[#5a3a52] text-sm font-medium transition">📄 PDF</button>
-        </div>
+      <div class="flex gap-2">
+        <button id="btnClear" class="px-3 py-2 border-2 border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-bold text-gray-500 transition flex items-center gap-1.5">🗑️ <span id="btnClearText">Limpiar</span></button>
+        <button id="btnXLSX" class="px-4 py-2 bg-emerald-50 text-emerald-800 border-2 border-emerald-200 rounded-xl hover:bg-emerald-100 text-sm font-bold transition flex items-center gap-1.5">📊 Excel</button>
+        <button id="btnPDF" class="px-5 py-2 bg-[#714B67] text-white rounded-xl hover:bg-[#5a3a52] text-sm font-bold transition shadow-md flex items-center gap-1.5">📄 PDF</button>
       </div>
     </div>
-    <p id="footerBlockMsg" class="text-center text-xs mt-1 text-amber-600 font-medium hidden"></p>
+    <p id="footerBlockMsg" class="text-center text-xs mt-1.5 text-amber-600 font-semibold hidden"></p>
   </div>
 </footer>
 
-<!-- PDF EXPORT AREA -->
+<!-- ═══ PDF AREA ═══ -->
 <section id="pdfArea" class="hidden p-6" style="font-family:Arial,sans-serif">
-  <h2 style="color:#714B67;font-size:20px;font-weight:bold;margin-bottom:4px">Odoo Partner Qualification 360°</h2>
-  <p style="font-size:11px;color:#666;margin-bottom:14px"><span id="pdfGenerated">Generado:</span> <span id="pdfDate"></span></p>
-
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;background:#f8f4f7;padding:10px;border-radius:6px;border:1px solid #e9e3ee;margin-bottom:12px">
-    <div><strong>Partner:</strong> <span id="pdfPartner"></span></div>
-    <div><strong>Salesperson:</strong> <span id="pdfPM"></span></div>
-    <div><strong>Score:</strong> <span id="pdfScore"></span>/5.0</div>
-    <div><strong>Categoría:</strong> <span id="pdfType"></span></div>
-    <div><strong>Subcategoría:</strong> <span id="pdfSubcat"></span></div>
-    <div><strong>Red Flags:</strong> <span id="pdfRF"></span></div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <div style="width:40px;height:40px;background:#714B67;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px">🎯</div>
+    <div>
+      <h2 style="color:#714B67;font-size:18px;font-weight:bold;margin:0">Odoo Partner Qualification 360°</h2>
+      <p style="font-size:10px;color:#888;margin:2px 0 0"><span id="pdfGenerated">Generado:</span> <span id="pdfDate"></span></p>
+    </div>
   </div>
-
-  <div style="background:#f5f0f4;padding:10px;border-radius:6px;border:1px solid #d4b8cc;margin-bottom:12px">
-    <h3 style="color:#714B67;font-weight:bold;font-size:12px;margin-bottom:6px" id="pdfActionTitle">Plan de Acción</h3>
-    <div id="pdfActionPlan" style="font-size:11px;line-height:1.6"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+    <div style="background:#f8f4f7;padding:10px;border-radius:8px;border:1px solid #e9e3ee">
+      <p style="font-size:9px;color:#714B67;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px">Partner</p>
+      <p style="font-size:13px;font-weight:bold;margin:0" id="pdfPartner"></p>
+    </div>
+    <div style="background:#f8f4f7;padding:10px;border-radius:8px;border:1px solid #e9e3ee">
+      <p style="font-size:9px;color:#714B67;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px">Salesperson</p>
+      <p style="font-size:13px;font-weight:bold;margin:0" id="pdfPM"></p>
+    </div>
+    <div style="background:#714B67;padding:10px;border-radius:8px">
+      <p style="font-size:9px;color:rgba(255,255,255,.7);font-weight:bold;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px">Score total</p>
+      <p style="font-size:20px;font-weight:900;color:white;margin:0"><span id="pdfScore"></span>/5.0</p>
+    </div>
   </div>
-
-  <h3 style="font-weight:bold;font-size:12px;margin-bottom:6px">Respuestas Detalladas</h3>
-  <table style="width:100%;font-size:10px;border-collapse:collapse;margin-bottom:16px">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+    <div style="background:#fdf4fb;padding:8px;border-radius:8px;border:1px solid #e9cce4">
+      <p style="font-size:9px;color:#714B67;font-weight:bold;margin:0 0 2px">Categoría</p>
+      <p style="font-size:12px;font-weight:bold;margin:0" id="pdfType"></p>
+    </div>
+    <div style="background:#fdf4fb;padding:8px;border-radius:8px;border:1px solid #e9cce4">
+      <p style="font-size:9px;color:#714B67;font-weight:bold;margin:0 0 2px">Subcategoría</p>
+      <p style="font-size:11px;font-weight:bold;margin:0" id="pdfSubcat"></p>
+    </div>
+    <div style="background:#fff5f5;padding:8px;border-radius:8px;border:1px solid #fecaca">
+      <p style="font-size:9px;color:#dc2626;font-weight:bold;margin:0 0 2px">Red Flags</p>
+      <p style="font-size:16px;font-weight:900;color:#dc2626;margin:0" id="pdfRF"></p>
+    </div>
+  </div>
+  <div style="background:#f5f0f4;padding:12px;border-radius:8px;border:1px solid #d4b8cc;margin-bottom:12px">
+    <h3 style="color:#714B67;font-weight:bold;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px">Plan de Acción</h3>
+    <div id="pdfActionPlan" style="font-size:11px;line-height:1.7"></div>
+  </div>
+  <h3 style="font-weight:bold;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#714B67;margin-bottom:8px">Respuestas Detalladas</h3>
+  <table style="width:100%;font-size:9px;border-collapse:collapse;margin-bottom:16px">
     <thead>
       <tr style="background:#714B67;color:white">
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:12%">Bloque</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:7%">Rol</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:26%">Pregunta</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:center;width:5%">Score</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:24%">Opción elegida</th>
-        <th style="padding:5px 6px;border:1px solid #ccc;text-align:left;width:26%">Comentarios del PM</th>
+        <th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:left;width:11%">Bloque</th>
+        <th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:left;width:7%">Rol</th>
+        <th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:left;width:25%">Pregunta</th>
+        <th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:center;width:5%">Score</th>
+        <th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:left;width:22%">Opción elegida</th>
+        <th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:left;width:30%">Comentarios del PM</th>
       </tr>
     </thead>
     <tbody id="pdfBody"></tbody>
   </table>
-
-  <!-- WEIGHT SUMMARY -->
   <div style="page-break-before:always">
-    <h3 style="color:#714B67;font-weight:bold;font-size:13px;margin-bottom:4px">Distribución de Pesos — Referencia para PM y Team Leader</h3>
-    <p style="font-size:10px;color:#666;margin-bottom:10px">Esta tabla muestra cómo se distribuye la importancia de cada bloque y pregunta en el score final. Un peso alto significa que esa área impacta más la clasificación del partner.</p>
+    <h3 style="color:#714B67;font-weight:bold;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Distribución de Pesos — Referencia para PM y Team Leader</h3>
+    <p style="font-size:9px;color:#666;margin-bottom:10px">Un peso mayor significa que esa área impacta más en la clasificación final del partner.</p>
     <div id="pdfWeightSummary"></div>
   </div>
 </section>
 
 <script>
+// ── LANG ──────────────────────────────────────────────────────────
 const LANG={
-  es:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Tipo:',labelSubcat:'Subcat:',labelTotal:'Score:',labelPartnerName:'Nombre del Partner *',labelPartnerManager:'Salesperson *',labelRoleMode:'Filtro por Rol',labelSearch:'Búsqueda',optAll:'Ver Todo',optRecruiter:'Recruiter + Compartidas',optPM:'PM + Compartidas',noteLabel:'Nota:',noteText:'Selecciona N/A solo si genuinamente no aplica. Score ≤ 3 y N/A requieren comentario real (mín. 15 caracteres).',resultsTitle:'Clasificación',actionPlanTitle:'Plan de Acción',footerLabelTotal:'Score:',footerLabelType:'Tipo:',footerRFLabel:'flags',btnClearText:'Limpiar',confirmClear:'¿Seguro que quieres borrar todo?',alertNoData:'Completa el nombre del Partner y Salesperson primero.',alertNoResponses:'Responde al menos una pregunta primero.',pdfGenerated:'Generado:',commentsPlaceholder:'Explica el contexto (mín. 15 caracteres)...',commentRequired:'Comentario requerido (score ≤ 3 / N/A)',commentTooShort:'Muy corto, mín. 15 caracteres con contexto real',commentInvalid:'Parece relleno genérico, escribe el contexto real',blockerTitle:'No se puede exportar todavía'},
-  en:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Type:',labelSubcat:'Subcat:',labelTotal:'Score:',labelPartnerName:'Partner Name *',labelPartnerManager:'Salesperson *',labelRoleMode:'Role Filter',labelSearch:'Search',optAll:'View All',optRecruiter:'Recruiter + Shared',optPM:'PM + Shared',noteLabel:'Note:',noteText:'Select N/A only if it genuinely doesn\'t apply. Score ≤ 3 and N/A require a real comment (min. 15 chars).',resultsTitle:'Classification',actionPlanTitle:'Action Plan',footerLabelTotal:'Score:',footerLabelType:'Type:',footerRFLabel:'flags',btnClearText:'Clear',confirmClear:'Are you sure you want to clear everything?',alertNoData:'Please fill in Partner Name and Salesperson first.',alertNoResponses:'Please answer at least one question.',pdfGenerated:'Generated:',commentsPlaceholder:'Explain the context (min. 15 chars)...',commentRequired:'Comment required (score ≤ 3 / N/A)',commentTooShort:'Too short, min. 15 chars with real context',commentInvalid:'Looks like filler text, write the actual context',blockerTitle:'Cannot export yet'}
+  es:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Tipo:',labelSubcat:'Subcat:',labelTotal:'Score:',labelPartnerName:'Nombre del Partner *',labelPartnerManager:'Salesperson *',labelRoleMode:'Filtro por Rol',labelSearch:'Búsqueda rápida',optAll:'Ver Todo',optRecruiter:'Recruiter + Compartidas',optPM:'PM + Compartidas',noteLabel:'Nota:',noteText:'Selecciona N/A solo si genuinamente no aplica. Scores ≤ 2 y ciertos N/A requieren comentario obligatorio.',resultsTitle:'Clasificación',actionPlanTitle:'Plan de Acción',footerLabelTotal:'Score:',footerLabelType:'Tipo:',footerRFLabel:'flags',btnClearText:'Limpiar',confirmClear:'¿Seguro que quieres borrar todo?',alertNoData:'Completa el nombre del Partner y Salesperson primero.',alertNoResponses:'Responde al menos una pregunta primero.',pdfGenerated:'Generado:',commentsPlaceholder:'Explica el contexto (mín. 15 caracteres)...',commentTooShort:'Muy corto — escribe al menos 15 caracteres de contexto real',commentInvalid:'Parece texto de relleno — escribe contexto real',blockerTitle:'No se puede exportar todavía'},
+  en:{mainTitle:'Odoo Partner Qualification 360°',labelType:'Type:',labelSubcat:'Subcat:',labelTotal:'Score:',labelPartnerName:'Partner Name *',labelPartnerManager:'Salesperson *',labelRoleMode:'Role Filter',labelSearch:'Quick Search',optAll:'View All',optRecruiter:'Recruiter + Shared',optPM:'PM + Shared',noteLabel:'Note:',noteText:'Select N/A only if it genuinely doesn\'t apply. Scores ≤ 2 and certain N/A require a mandatory comment.',resultsTitle:'Classification',actionPlanTitle:'Action Plan',footerLabelTotal:'Score:',footerLabelType:'Type:',footerRFLabel:'flags',btnClearText:'Clear',confirmClear:'Are you sure you want to clear everything?',alertNoData:'Please fill in Partner Name and Salesperson first.',alertNoResponses:'Please answer at least one question first.',pdfGenerated:'Generated:',commentsPlaceholder:'Explain the context (min. 15 chars)...',commentTooShort:'Too short — write at least 15 characters of real context',commentInvalid:'Looks like filler text — write actual context',blockerTitle:'Cannot export yet'}
 };
 
+// ── Q ARRAY ───────────────────────────────────────────────────────
+// naRequired: true = N/A needs comment | false = N/A is self-explanatory
 const Q=[
-  // ── PR QUICK PROFILING ── Recruiter ──────────────────────────────
-  // C1: Fusión de "años experiencia" + "experiencia ERPs" → una sola pregunta
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Cuál es su experiencia previa con ERPs o software empresarial antes de Odoo?',
-   en:'What is their prior experience with ERPs or business software before Odoo?',
-   o:[['Sin experiencia, primera vez con este tipo de software','No experience, first time with this type of software'],
-      ['Usaron software simple (contabilidad básica, CRM ligero)','Used simple software (basic accounting, light CRM)'],
-      ['Implementaron o vendieron otros ERPs tradicionales','Implemented or sold other traditional ERPs'],
-      ['Experiencia con ERPs open source (Odoo Community, etc.)','Experience with open source ERPs (Odoo Community, etc.)'],
-      ['Amplia experiencia con Odoo Enterprise o múltiples ERPs','Extensive experience with Odoo Enterprise or multiple ERPs']],
-   w:10,t:'core'},
-
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Qué rol juega Odoo en su negocio actualmente?',
-   en:'What role does Odoo currently play in their business?',
-   o:[['Solo explorando, sin compromiso claro','Just exploring, no clear commitment'],
-      ['Un producto más entre varios que ofrecen','One of several products they offer'],
-      ['Una línea de negocio importante pero no la principal','An important but not primary business line'],
-      ['Pilar clave de su oferta de valor','Key pillar of their value offer'],
-      ['Producto estrella, es su principal fuente de ingresos','Flagship product, main revenue source']],
-   w:10,t:'core'},
-
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Quién lidera la práctica de Odoo internamente?',
-   en:'Who leads the Odoo practice internally?',
-   o:[['Solo el fundador, sin equipo dedicado','Only the founder, no dedicated team'],
-      ['Fundador + 1 persona part-time','Founder + 1 part-time person'],
-      ['1-2 personas dedicadas exclusivamente','1-2 exclusively dedicated people'],
-      ['Equipo de 3-4 personas','Team of 3-4 people'],
-      ['Equipo de 5 o más personas dedicadas','Team of 5+ dedicated people']],
-   w:8,t:'core'},
-
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Han invertido en certificaciones oficiales de Odoo o en el PLO?',
-   en:'Have they invested in official Odoo certifications or PLO?',
-   o:[['N/A – No sabíamos que existían','N/A – Did not know they existed'],
-      ['Sin presupuesto ni planes concretos','No budget or concrete plans'],
-      ['Están evaluando si vale la pena','Evaluating whether it is worth it'],
-      ['Presupuesto aprobado, aún no ejecutado','Budget approved, not yet executed'],
-      ['En proceso activo de certificación o PLO','Actively in certification or PLO process'],
-      ['Ya han invertido y tienen certificados oficiales','Already invested and hold official certifications']],
-   w:8,t:'maturity'},
-
-  // C3: Redacción mejorada "¿Cómo conocieron Odoo?"
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Cómo llegaron a Odoo y qué tan deliberada fue la decisión de convertirse en partner?',
-   en:'How did they find Odoo and how deliberate was the decision to become a partner?',
-   o:[['Búsqueda casual en Google, sin mucha investigación previa','Casual Google search, not much prior research'],
-      ['Un cliente o contacto lo mencionó y lo exploraron','A client or contact mentioned it and they explored it'],
-      ['Venían de usar Odoo Community internamente','They were already using Odoo Community internally'],
-      ['Un cliente lo pidió específicamente o ya lo habían implementado antes','A client specifically requested it or they had implemented it before'],
-      ['Research activo y deliberado comparando opciones de ERP del mercado','Active and deliberate research comparing ERP options in the market']],
-   w:6,t:'aspiration'},
-
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Cuándo contemplan cerrar su primer proyecto Odoo Enterprise?',
-   en:'When do they plan to close their first Odoo Enterprise project?',
-   o:[['No está en sus planes, no tienen intención','Not in their plans, no intention'],
-      ['Más de 12 meses','More than 12 months'],
-      ['9-12 meses','9-12 months'],
-      ['3-6 meses','3-6 months'],
-      ['Ya tienen uno en pipeline o cerrado','Already have one in pipeline or closed']],
-   w:8,t:'core'},
-
-  // C4: Reencuadre "¿Partners de otros ERPs?" → foco en Odoo
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Qué tan enfocados están en Odoo vs otras plataformas o ERPs?',
-   en:'How focused are they on Odoo vs other platforms or ERPs?',
-   o:[['Odoo es uno de 3+ productos que venden e implementan por igual','Odoo is one of 3+ products they sell and implement equally'],
-      ['Tienen otro ERP principal y Odoo es secundario','They have another main ERP and Odoo is secondary'],
-      ['Balanceado: Odoo y otra plataforma con peso similar','Balanced: Odoo and another platform with similar weight'],
-      ['Odoo es su producto principal, tienen uno complementario','Odoo is their main product, have one complementary tool'],
-      ['100% enfocados en Odoo, es su unico producto de implementacion','100% focused on Odoo, it is their only implementation product']],
-   w:8,t:'core'},
-
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Están abiertos a tener reuniones regulares con un Partner Manager de Odoo?',
-   en:'Are they open to having regular meetings with an Odoo Partner Manager?',
-   o:[['No, no les interesa ni lo ven necesario','No, not interested or necessary'],
-      ['Prefieren esperar a tener algo concreto primero','Prefer to wait until they have something concrete'],
-      ['Tal vez, depende del tema y del valor que aporte','Maybe, depends on topic and value'],
-      ['Probablemente sí, están abiertos a la relación','Probably yes, open to the relationship'],
-      ['Definitivamente sí, lo ven como una prioridad','Definitely yes, they see it as a priority']],
-   w:8,t:'core'},
-
-  {b:'PR Quick Profiling',r:'Recruiter',
-   es:'¿Qué tipo de proyectos Odoo están haciendo o planean hacer?',
-   en:'What type of Odoo projects are they doing or planning to do?',
-   o:[['N/A – Aún no han arrancado ningún proyecto con clientes','N/A – Have not started any client projects yet'],
-      ['Uso interno propio, sin vender a clientes todavía','Internal use only, not selling to clients yet'],
-      ['Mayoría Community, algún Enterprise esporádico','Mostly Community, occasional Enterprise'],
-      ['Mix 50/50 entre Community y Enterprise','Mix 50/50 between Community and Enterprise'],
-      ['Principalmente Enterprise con algún Community','Mainly Enterprise with some Community'],
-      ['100% proyectos Enterprise','100% Enterprise projects']],
-   w:10,t:'maturity'},
-
-  // NUEVA C7: Ticket promedio → Ambos, PR Quick Profiling
-  {b:'PR Quick Profiling',r:'Ambos',
-   es:'¿Cuál es el rango de inversión típico que manejan sus clientes en proyectos de implementación?',
-   en:'What is the typical investment range their clients handle in implementation projects?',
-   o:[['N/A – Sin proyectos de referencia todavía','N/A – No reference projects yet'],
-      ['LATAM: menos de $5K / USA: menos de $15K USD','LATAM: under $5K / USA: under $15K USD'],
-      ['LATAM: $5K–$20K / USA: $15K–$50K USD','LATAM: $5K–$20K / USA: $15K–$50K USD'],
-      ['LATAM: $20K–$50K / USA: $50K–$120K USD','LATAM: $20K–$50K / USA: $50K–$120K USD'],
-      ['LATAM: $50K–$100K / USA: $120K–$250K USD','LATAM: $50K–$100K / USA: $120K–$250K USD'],
-      ['LATAM: más de $100K / USA: más de $250K USD','LATAM: over $100K / USA: over $250K USD']],
-   w:8,t:'maturity'},
-
-  // ── ESTRUCTURA & EQUIPO ── Ambos ──────────────────────────────────
-  {b:'Estructura & Equipo',r:'Ambos',
-   es:'¿Cuántas personas trabajan 100% dedicadas a Odoo?',
-   en:'How many people are 100% dedicated to Odoo?',
-   o:[['Nadie dedicado, todos hacen otras cosas también','Nobody dedicated, all do other things too'],
-      ['1-2 personas','1-2 people'],
-      ['3-4 personas','3-4 people'],
-      ['5-7 personas','5-7 people'],
-      ['8 o más personas','8 or more people']],
-   w:15,t:'core'},
-
-  {b:'Estructura & Equipo',r:'Ambos',
-   es:'¿El fundador o CEO está activamente involucrado en la práctica de Odoo?',
-   en:'Is the founder or CEO actively involved in the Odoo practice?',
-   o:[['No, está ausente o delegó completamente','No, absent or fully delegated'],
-      ['Menos del 25% de su tiempo','Less than 25% of their time'],
-      ['Alrededor del 50% de su tiempo','About 50% of their time'],
-      ['75% o más de su tiempo','75% or more of their time'],
-      ['100% dedicado a Odoo como prioridad principal','100% dedicated to Odoo as main priority']],
-   w:15,t:'core'},
-
-  {b:'Estructura & Equipo',r:'Ambos',
-   es:'¿Tienen objetivos o metas definidas para su práctica de Odoo este año?',
-   en:'Do they have defined objectives or goals for their Odoo practice this year?',
-   o:[['No tienen ningún objetivo definido, van al día','No defined objectives at all, day by day'],
-      ['Vagas e informales, nada documentado','Vague and informal, nothing documented'],
-      ['Cuantitativos básicos (ej. cerrar X proyectos)','Basic quantitative (e.g. close X projects)'],
-      ['KPIs claros y medibles con seguimiento','Clear measurable KPIs with tracking'],
-      ['OKRs formales con revisión periódica activa','Formal OKRs with active periodic review']],
-   w:10,t:'core'},
-
-  // NUEVA C10: Capacidad disponible → Ambos, Estructura & Equipo
-  {b:'Estructura & Equipo',r:'Ambos',
-   es:'¿Tienen capacidad disponible para arrancar un nuevo proyecto de implementación hoy?',
-   en:'Do they have available capacity to start a new implementation project today?',
-   o:[['N/A – Aún no tienen equipo para proyectos','N/A – No team for projects yet'],
-      ['No, están al 100% de capacidad sin margen','No, at 100% capacity with no margin'],
-      ['Limitada, podrían arrancar en 2-3 meses','Limited, could start in 2-3 months'],
-      ['Sí, con algo de planificación previa (1-2 semanas)','Yes, with some prior planning (1-2 weeks)'],
-      ['Sí, tienen capacidad disponible ahora mismo','Yes, have capacity available right now'],
-      ['Sí, y tienen bench de recursos listos para escalar','Yes, and have bench resources ready to scale']],
-   w:8,t:'maturity'},
-
-  // ── COMERCIALES ── PM ─────────────────────────────────────────────
-  {b:'Comerciales',r:'PM',
-   es:'¿Cuántas oportunidades Enterprise tienen activas en su pipeline?',
-   en:'How many active Enterprise opportunities do they have in their pipeline?',
-   o:[['N/A – Aún no operan activamente como partner comercial','N/A – Not yet operating actively as a commercial partner'],
-      ['Ninguna, no hay pipeline activo','None, no active pipeline'],
-      ['1-2 oportunidades','1-2 opportunities'],
-      ['3-5 oportunidades','3-5 opportunities'],
-      ['6-10 oportunidades activas','6-10 active opportunities'],
-      ['Más de 10 oportunidades activas','More than 10 active opportunities']],
-   w:12,t:'maturity'},
-
-  {b:'Comerciales',r:'PM',
-   es:'¿Cuál es su win rate aproximado en oportunidades Enterprise?',
-   en:'What is their approximate win rate on Enterprise opportunities?',
-   o:[['N/A – Llevan menos de 12 meses operando o sin deals cerrados','N/A – Operating less than 12 months or no closed deals'],
-      ['Menos del 20%, muy bajo','Less than 20%, very low'],
-      ['20-40%','20-40%'],
-      ['40-60%','40-60%'],
-      ['60-75%','60-75%'],
-      ['Más del 75%, excelente win rate','>75%, excellent win rate']],
-   w:10,t:'maturity'},
-
-  {b:'Comerciales',r:'PM',
-   es:'¿Tienen equipo o rol comercial dedicado a vender Odoo?',
-   en:'Do they have a dedicated commercial team or role to sell Odoo?',
-   o:[['Completamente oportunista, venden si llega','Completely opportunistic, sell if it comes'],
-      ['El fundador vende además de hacer todo lo demás','Founder sells in addition to everything else'],
-      ['1 persona comercial dedicada','1 dedicated commercial person'],
-      ['2-3 personas en ventas','2-3 people in sales'],
-      ['Equipo comercial formal y estructurado','Formal and structured commercial team']],
-   w:12,t:'core'},
-
-  {b:'Comerciales',r:'PM',
-   es:'¿Tienen un ICP (Ideal Customer Profile) definido para sus proyectos Odoo?',
-   en:'Do they have a defined ICP (Ideal Customer Profile) for their Odoo projects?',
-   o:[['Venden a cualquiera que llegue sin criterio','Sell to anyone without criteria'],
-      ['Tienen una idea general pero sin documentar','Have a general idea but undocumented'],
-      ['Una vertical parcialmente definida','A partially defined vertical'],
-      ['ICP documentado y usado activamente en ventas','Documented ICP actively used in sales'],
-      ['ICP + playbooks y scripts de venta por segmento','ICP + playbooks and sales scripts by segment']],
-   w:10,t:'maturity'},
-
-  // C5: Quitar N/A de "¿Cómo generan leads?" → core
-  {b:'Comerciales',r:'PM',
-   es:'¿Cómo generan sus oportunidades comerciales de Odoo?',
-   en:'How do they generate their Odoo commercial opportunities?',
-   o:[['No tienen proceso, esperan que lleguen solos','No process, wait for them to come'],
-      ['Solo referidos informales de clientes actuales','Only informal referrals from current clients'],
-      ['Marketing básico: redes sociales o eventos esporádicos','Basic marketing: social media or sporadic events'],
-      ['Equipo de marketing o proceso comercial estructurado','Marketing team or structured commercial process'],
-      ['Estrategia omnicanal activa: SEO, eventos, alianzas, inbound','Active omnichannel strategy: SEO, events, alliances, inbound']],
-   w:10,t:'core'},
-
-  // NUEVA C11: Ciclo de venta → Ambos, Comerciales
-  {b:'Comerciales',r:'Ambos',
-   es:'¿Cuánto dura típicamente su proceso desde que identifican un lead hasta cerrar el contrato?',
-   en:'How long does their process typically take from identifying a lead to closing the contract?',
-   o:[['N/A – Sin deals Enterprise cerrados aún para tener referencia','N/A – No Enterprise deals closed yet to have a reference'],
-      ['Más de 9 meses','More than 9 months'],
-      ['6 a 9 meses','6 to 9 months'],
-      ['3 a 6 meses','3 to 6 months'],
-      ['1 a 3 meses','1 to 3 months'],
-      ['Menos de 1 mes, proceso muy ágil y eficiente','Less than 1 month, very agile and efficient process']],
-   w:6,t:'maturity'},
-
-  // ── TÉCNICAS ── PM ────────────────────────────────────────────────
-  // C2a: Certificados → solo Odoo (Functional/Technical)
-  {b:'Técnicas',r:'PM',
-   es:'¿Cuántos consultores tienen certificación oficial de Odoo (Functional o Technical)?',
-   en:'How many consultants hold an official Odoo certification (Functional or Technical)?',
-   o:[['N/A – Muy nuevos, aún sin tiempo para certificarse','N/A – Too new, not enough time to certify yet'],
-      ['Ninguno, llevan tiempo sin certificar a nadie','None, have been around without certifying anyone'],
-      ['1 certificado Odoo','1 Odoo certified'],
-      ['2 certificados Odoo','2 Odoo certified'],
-      ['3 certificados Odoo','3 Odoo certified'],
-      ['4 o más certificados Odoo','4 or more Odoo certified']],
-   w:12,t:'maturity'},
-
-  // C2b: Nueva — otras certificaciones como valor complementario
-  {b:'Técnicas',r:'PM',
-   es:'¿El equipo tiene certificaciones o experiencia formal en otras herramientas además de Odoo?',
-   en:'Does the team have certifications or formal experience in tools beyond Odoo?',
-   o:[['N/A – Solo trabajan con Odoo, no aplica','N/A – Only work with Odoo, does not apply'],
-      ['No, sin ninguna certificación en otras herramientas','No, no certifications in other tools at all'],
-      ['Herramientas básicas (Excel avanzado, CRM simple)','Basic tools (advanced Excel, simple CRM)'],
-      ['1 ERP o plataforma adicional (SAP, Salesforce, etc.)','1 additional ERP or platform (SAP, Salesforce, etc.)'],
-      ['2 ERPs o plataformas adicionales certificadas','2 additional certified ERPs or platforms'],
-      ['3 o más plataformas, equipo multi-plataforma consolidado','3+ platforms, consolidated multi-platform team']],
-   w:6,t:'aspiration'},
-
-  {b:'Técnicas',r:'PM',
-   es:'¿Cuántos módulos de Odoo han implementado en producción con clientes reales?',
-   en:'How many Odoo modules have they implemented in production with real clients?',
-   o:[['N/A – Sin implementaciones en producción aún','N/A – No production implementations yet'],
-      ['Solo 1 módulo','Only 1 module'],
-      ['2-3 módulos','2-3 modules'],
-      ['4-6 módulos','4-6 modules'],
-      ['7-10 módulos','7-10 modules'],
-      ['Más de 10 módulos, implementaciones complejas multi-área','More than 10 modules, complex multi-area implementations']],
-   w:10,t:'maturity'},
-
-  {b:'Técnicas',r:'PM',
-   es:'¿Usan Odoo.sh para sus proyectos y tienen un proceso de QA definido?',
-   en:'Do they use Odoo.sh for their projects and have a defined QA process?',
-   o:[['N/A – Sus proyectos son muy simples o aún no implementan','N/A – Projects are very simple or not implementing yet'],
-      ['Hosting básico sin proceso de QA','Basic hosting with no QA process'],
-      ['Usan Odoo.sh con QA manual básico','Use Odoo.sh with basic manual QA'],
-      ['Odoo.sh con staging y proceso semi-automatizado','Odoo.sh with staging and semi-automated process'],
-      ['DevOps completo con CI/CD y pruebas automatizadas','Full DevOps with CI/CD and automated testing'],
-      ['DevOps avanzado, rollbacks automáticos y monitoreo en producción','Advanced DevOps, automatic rollbacks and production monitoring']],
-   w:8,t:'maturity'},
-
-  {b:'Técnicas',r:'PM',
-   es:'¿Usan o publican aplicaciones de la tienda oficial de Odoo (apps.odoo.com)?',
-   en:'Do they use or publish applications from the official Odoo store (apps.odoo.com)?',
-   o:[['N/A – No conocen la tienda de apps de Odoo','N/A – Do not know the Odoo app store'],
-      ['La conocen pero no la usan actualmente','Know it but do not use it currently'],
-      ['La usan ocasionalmente para 1-2 apps','Use it occasionally for 1-2 apps'],
-      ['Usan varias apps regularmente en sus proyectos','Use several apps regularly in their projects'],
-      ['Publican apps propias con descargas activas','Publish their own apps with active downloads'],
-      ['Publican múltiples apps y tienen presencia consolidada en la tienda','Publish multiple apps and have consolidated store presence']],
-   w:6,t:'aspiration'},
-
-  {b:'Técnicas',r:'PM',
-   es:'¿Realizan integraciones de Odoo con sistemas externos (ERP, ecommerce, logística, etc.)?',
-   en:'Do they do Odoo integrations with external systems (ERP, ecommerce, logistics, etc.)?',
-   o:[['No, sin ninguna experiencia en integraciones','No, no integration experience at all'],
-      ['Básicas / imports y exports manuales','Basic / manual imports and exports'],
-      ['APIs estándar de Odoo con sistemas comunes','Odoo standard APIs with common systems'],
-      ['Integraciones custom complejas a medida','Complex custom integrations'],
-      ['Arquitecturas multi-sistema con middleware','Multi-system architectures with middleware']],
-   w:8,t:'core'},
-
-  // ── DELIVERY & CS ── PM ───────────────────────────────────────────
-  {b:'Delivery & CS',r:'PM',
-   es:'¿Tienen una metodología de implementación definida y documentada?',
-   en:'Do they have a defined and documented implementation methodology?',
-   o:[['N/A – Sin proyectos aún para necesitar metodología','N/A – No projects yet to need a methodology'],
-      ['Sin proceso formal, cada proyecto es diferente','No formal process, each project is different'],
-      ['Proceso semi-estructurado con algunas plantillas','Semi-structured process with some templates'],
-      ['Metodología documentada y replicable','Documented and replicable methodology'],
-      ['Ágil con mejora continua y lecciones aprendidas','Agile with continuous improvement and lessons learned'],
-      ['Metodología certificada, benchmarked y evolucionando activamente','Certified methodology, benchmarked and actively evolving']],
-   w:10,t:'maturity'},
-
-  {b:'Delivery & CS',r:'PM',
-   es:'¿Cuál es su time-to-value típico? (desde kick-off hasta que el cliente opera en producción)',
-   en:'What is their typical time-to-value? (from kick-off to client operating in production)',
-   o:[['N/A – Sin proyectos completados aún','N/A – No completed projects yet'],
-      ['Más de 6 meses','More than 6 months'],
-      ['4 a 6 meses','4 to 6 months'],
-      ['2 a 4 meses','2 to 4 months'],
-      ['Menos de 2 meses','Less than 2 months'],
-      ['Menos de 1 mes, implementaciones express con metodología ágil','Less than 1 month, express implementations with agile methodology']],
-   w:8,t:'maturity'},
-
-  {b:'Delivery & CS',r:'PM',
-   es:'¿Miden formalmente la satisfacción del cliente durante o después de los proyectos?',
-   en:'Do they formally measure customer satisfaction during or after projects?',
-   o:[['N/A – Muy nuevos, sin proyectos suficientes','N/A – Too new, not enough projects'],
-      ['Solo feedback informal y conversacional','Only informal conversational feedback'],
-      ['Han encuestado 1-2 clientes de forma esporádica','Have surveyed 1-2 clients sporadically'],
-      ['Usan NPS o CSAT de forma sistemática','Use NPS or CSAT systematically'],
-      ['Sistema formal con acciones de mejora y seguimiento','Formal system with improvement actions and follow-up'],
-      ['Programa de éxito del cliente consolidado, reportes periódicos','Consolidated customer success program, periodic reports']],
-   w:8,t:'maturity'},
-
-  // C6: Post-proyecto → añadir N/A + bajar peso 10→8
-  {b:'Delivery & CS',r:'PM',
-   es:'¿Tienen una estrategia de seguimiento y retención con clientes después de cerrar un proyecto?',
-   en:'Do they have a follow-up and retention strategy with clients after closing a project?',
-   o:[['N/A – Sin proyectos cerrados suficientes aún','N/A – Not enough closed projects yet'],
-      ['Nada formal, cada proyecto termina y se desconectan','Nothing formal, each project ends and they disconnect'],
-      ['Soporte reactivo básico cuando el cliente contacta','Basic reactive support when client reaches out'],
-      ['Soporte con SLAs definidos y contratos de mantenimiento','Support with defined SLAs and maintenance contracts'],
-      ['Estrategia activa de upsell y expansión de módulos','Active upsell strategy and module expansion'],
-      ['Customer success program consolidado con revisión trimestral','Consolidated customer success program with quarterly review']],
-   w:8,t:'maturity'},
-
-  // ── COMPROMISO ── PM ──────────────────────────────────────────────
-  {b:'Compromiso',r:'PM',
-   es:'¿Con qué frecuencia asisten a trainings, webinars o eventos organizados por Odoo?',
-   en:'How often do they attend trainings, webinars or events organized by Odoo?',
-   o:[['Nunca han asistido a nada de Odoo','Never attended any Odoo event or training'],
-      ['Casi nunca, no lo priorizan','Almost never, do not prioritize it'],
-      ['De vez en cuando, cuando algo les llama la atención','Occasionally, when something catches their attention'],
-      ['Regularmente, al menos una vez al mes','Regularly, at least once a month'],
-      ['Muy activos, asisten a todo lo que pueden','Very active, attend everything they can']],
-   w:6,t:'core'},
-
-  {b:'Compromiso',r:'PM',
-   es:'¿Han participado en iniciativas de co-sell o co-marketing con Odoo?',
-   en:'Have they participated in co-sell or co-marketing initiatives with Odoo?',
-   o:[['N/A – Aún construyendo la capacidad básica','N/A – Still building basic capacity'],
-      ['Nos interesa pero no hemos hecho nada aún','Interested but have not done anything yet'],
-      ['Hemos hecho 1 piloto o iniciativa conjunta','Have done 1 pilot or joint initiative'],
-      ['2-3 iniciativas activas en el año','2-3 active initiatives in the year'],
-      ['Colaboración continua y recurrente con Odoo','Continuous and recurring collaboration with Odoo'],
-      ['Socio estratégico consolidado, múltiples iniciativas y pipeline compartido','Consolidated strategic partner, multiple initiatives and shared pipeline']],
-   w:6,t:'aspiration'},
-
-  {b:'Compromiso',r:'PM',
-   es:'¿Qué es lo que más valoran del partnership con Odoo?',
-   en:'What do they value most about the Odoo partnership?',
-   o:[['Principalmente las comisiones y el aspecto económico','Mainly the commissions and economic aspect'],
-      ['El producto en sí, lo que pueden vender','The product itself, what they can sell'],
-      ['El soporte técnico y acceso a recursos','Technical support and access to resources'],
-      ['El prestigio y reconocimiento de la marca Odoo','The prestige and recognition of the Odoo brand'],
-      ['Crecer juntos a largo plazo como socios estratégicos','Growing together long-term as strategic partners']],
-   w:6,t:'aspiration'},
-
-  {b:'Compromiso',r:'PM',
-   es:'¿Están planeando contratar más personas para su práctica de Odoo?',
-   en:'Are they planning to hire more people for their Odoo practice?',
-   o:[['N/A – Están en tamaño estable por decisión estratégica','N/A – At stable size by strategic decision'],
-      ['Solo lo están pensando sin nada concreto','Just thinking about it, nothing concrete'],
-      ['Lo planean para el próximo año','Planning it for next year'],
-      ['Ya están buscando candidatos activamente','Already actively searching for candidates'],
-      ['Contratando ahora mismo, proceso abierto','Hiring right now, open process'],
-      ['Crecimiento acelerado, múltiples posiciones abiertas simultáneamente','Accelerated growth, multiple positions open simultaneously']],
-   w:6,t:'maturity'},
-
-  // ── CLIENTES & RETENCIÓN ── PM ────────────────────────────────────
-  {b:'Clientes & Retención',r:'PM',
-   es:'¿Cuántos clientes Enterprise activos tienen en Odoo actualmente?',
-   en:'How many active Enterprise clients do they currently have in Odoo?',
-   o:[['N/A – Sin clientes Enterprise aún','N/A – No Enterprise clients yet'],
-      ['1-2 clientes','1-2 clients'],
-      ['3-5 clientes','3-5 clients'],
-      ['6-10 clientes','6-10 clients'],
-      ['11-20 clientes activos','11-20 active clients'],
-      ['Más de 20 clientes Enterprise activos','More than 20 active Enterprise clients']],
-   w:8,t:'maturity'},
-
-  {b:'Clientes & Retención',r:'PM',
-   es:'¿Cuál es su retention rate aproximado de clientes Odoo año a año?',
-   en:'What is their approximate Odoo client retention rate year over year?',
-   o:[['N/A – Sin datos suficientes todavía','N/A – Not enough data yet'],
-      ['Menos del 70%, rotación preocupante','Less than 70%, concerning turnover'],
-      ['70-80%, por debajo del promedio','70-80%, below average'],
-      ['80-90%, nivel aceptable','80-90%, acceptable level'],
-      ['90-95%, muy buena retención','90-95%, very good retention'],
-      ['Más del 95%, retención excepcional','More than 95%, exceptional retention']],
-   w:8,t:'maturity'},
-
-  {b:'Clientes & Retención',r:'PM',
-   es:'¿Han migrado clientes de Odoo Community a Enterprise?',
-   en:'Have they migrated clients from Odoo Community to Enterprise?',
-   o:[['N/A – No aplica a su modelo de negocio actual','N/A – Does not apply to their current business model'],
-      ['Ninguna migración realizada','No migrations done'],
-      ['1-2 migraciones','1-2 migrations'],
-      ['3-5 migraciones','3-5 migrations'],
-      ['6-10 migraciones exitosas','6-10 successful migrations'],
-      ['Más de 10 migraciones, proceso estandarizado','More than 10 migrations, standardized process']],
-   w:6,t:'aspiration'},
-
-  {b:'Clientes & Retención',r:'PM',
-   es:'¿Tienen especialización en alguna industria o vertical específica?',
-   en:'Do they have specialization in a specific industry or vertical?',
-   o:[['Sin especialización, atienden cualquier industria','No specialization, serve any industry'],
-      ['Clientes muy variados sin foco claro','Very varied clients without clear focus'],
-      ['1-2 industrias recurrentes pero sin posicionamiento formal','1-2 recurring industries but no formal positioning'],
-      ['Expertos reconocidos en 1 vertical específica','Recognized experts in 1 specific vertical'],
-      ['Reconocidos en su mercado como referentes de esa vertical','Recognized in their market as references in that vertical']],
-   w:8,t:'maturity'},
-
-  // NUEVA C8: Ingresos recurrentes → PM, Clientes & Retención
-  {b:'Clientes & Retención',r:'PM',
-   es:'¿Tienen ingresos recurrentes de sus clientes Odoo (soporte, mantenimiento, hosting, SaaS)?',
-   en:'Do they have recurring revenue from their Odoo clients (support, maintenance, hosting, SaaS)?',
-   o:[['N/A – Aún no tienen base de clientes para generar recurrencia','N/A – No client base yet for recurring revenue'],
-      ['No, 100% ingresos por proyectos puntuales','No, 100% revenue from one-time projects'],
-      ['Algo esporádico, menos del 10% de sus ingresos','Something sporadic, less than 10% of revenue'],
-      ['10-30% de sus ingresos son recurrentes','10-30% of revenue is recurring'],
-      ['30-50% de ingresos recurrentes, modelo híbrido sólido','30-50% recurring revenue, solid hybrid model'],
-      ['Más del 50% recurrentes, modelo MRR consolidado','More than 50% recurring, consolidated MRR model']],
-   w:10,t:'maturity'},
-
-  // NUEVA C9: Casos de éxito → PM, Clientes & Retención
-  {b:'Clientes & Retención',r:'PM',
-   es:'¿Tienen casos de éxito documentados o referencias de clientes que puedan compartir?',
-   en:'Do they have documented success cases or client references they can share?',
-   o:[['N/A – Sin proyectos completados aún','N/A – No completed projects yet'],
-      ['No, nada documentado','No, nothing documented'],
-      ['Algunos testimonios informales pero nada formal','Some informal testimonials but nothing formal'],
-      ['1-2 casos de éxito documentados','1-2 documented success cases'],
-      ['3-5 casos documentados con referencias disponibles','3-5 documented cases with available references'],
-      ['6 o más casos documentados, video-testimonios o publicados en Odoo.com','6+ documented cases, video testimonials or published on Odoo.com']],
-   w:8,t:'maturity'},
-
-  // ── EXPANSIÓN ── PM ───────────────────────────────────────────────
-  {b:'Expansión',r:'PM',
-   es:'¿Operan o tienen planes concretos de operar en más de un país?',
-   en:'Do they operate or have concrete plans to operate in more than one country?',
-   o:[['N/A – Su mercado es exclusivamente local y así lo quieren','N/A – Their market is exclusively local and they want to keep it that way'],
-      ['Solo local, sin planes de expansión','Only local, no expansion plans'],
-      ['Les interesa expandir pero sin plan concreto','Interested in expanding but no concrete plan'],
-      ['Planeando activamente la expansión a otro país','Actively planning expansion to another country'],
-      ['Ya operan en 2-3 países','Already operating in 2-3 countries'],
-      ['Operan en 4 o más países, presencia regional consolidada','Operating in 4+ countries, consolidated regional presence']],
-   w:6,t:'aspiration'},
-
-  // ── RIESGOS & ALERTAS ── Ambos ────────────────────────────────────
-  {b:'Riesgos & Alertas',r:'Ambos',
-   es:'¿Dependen en exceso de 1 o 2 clientes grandes para su facturación?',
-   en:'Do they overly depend on 1 or 2 large clients for their billing?',
-   o:[['N/A – Sin clientes todavía, no aplica','N/A – No clients yet, does not apply'],
-      ['Sí, 1-2 clientes representan más del 80% de sus ingresos','Yes, 1-2 clients represent more than 80% of revenue'],
-      ['60-80% en pocos clientes, riesgo alto','60-80% in few clients, high risk'],
-      ['40-60%, concentración media','40-60%, medium concentration'],
-      ['20-40%, razonablemente diversificado','20-40%, reasonably diversified'],
-      ['Menos del 20% en cualquier cliente, cartera bien diversificada','Less than 20% in any client, well diversified portfolio']],
-   w:5,t:'maturity'},
-
-  {b:'Riesgos & Alertas',r:'Ambos',
-   es:'¿Cuál es su rotación de talento en el equipo de Odoo?',
-   en:'What is their talent turnover in the Odoo team?',
-   o:[['N/A – Equipo muy nuevo o muy pequeño, sin historial suficiente','N/A – Team too new or too small, no sufficient history'],
-      ['Muy alta, más del 30% anual — inestabilidad crítica','Very high, more than 30% annual — critical instability'],
-      ['Alta, 20-30% anual — señal de alerta','High, 20-30% annual — warning signal'],
-      ['Media, 10-20% — rotación manejable','Medium, 10-20% — manageable turnover'],
-      ['Baja, 5-10% — equipo razonablemente estable','Low, 5-10% — reasonably stable team'],
-      ['Muy baja, menos del 5% — equipo muy sólido y fidelizado','Very low, less than 5% — very solid and loyal team']],
-   w:5,t:'maturity'},
-
-  {b:'Riesgos & Alertas',r:'Ambos',
-   es:'¿Qué porcentaje de sus proyectos actuales son con Odoo Enterprise (vs Community u otros)?',
-   en:'What percentage of their current projects are with Odoo Enterprise (vs Community or others)?',
-   o:[['Menos del 20%, casi todo Community u otras herramientas','Less than 20%, almost all Community or other tools'],
-      ['20-40% Enterprise','20-40% Enterprise'],
-      ['40-60% Enterprise','40-60% Enterprise'],
-      ['60-80% Enterprise','60-80% Enterprise'],
-      ['80-100% Enterprise, muy enfocados','80-100% Enterprise, very focused']],
-   w:10,t:'core'}
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Cuál es su experiencia previa con ERPs o software empresarial antes de Odoo?',en:'What is their prior experience with ERPs or business software before Odoo?',o:[['Sin experiencia, primera vez con este tipo de software','No experience, first time with this type of software'],['Usaron software simple (contabilidad básica, CRM ligero)','Used simple software (basic accounting, light CRM)'],['Implementaron o vendieron otros ERPs tradicionales','Implemented or sold other traditional ERPs'],['Experiencia con ERPs open source (Odoo Community, etc.)','Experience with open source ERPs (Odoo Community, etc.)'],['Amplia experiencia con Odoo Enterprise o múltiples ERPs','Extensive experience with Odoo Enterprise or multiple ERPs']],w:10,t:'core',naRequired:false},
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Qué rol juega Odoo en su negocio actualmente?',en:'What role does Odoo currently play in their business?',o:[['Solo explorando, sin compromiso claro','Just exploring, no clear commitment'],['Un producto más entre varios que ofrecen','One of several products they offer'],['Una línea de negocio importante pero no la principal','An important but not primary business line'],['Pilar clave de su oferta de valor','Key pillar of their value offer'],['Producto estrella, es su principal fuente de ingresos','Flagship product, main revenue source']],w:10,t:'core',naRequired:false},
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Quién lidera la práctica de Odoo internamente?',en:'Who leads the Odoo practice internally?',o:[['Solo el fundador, sin equipo dedicado','Only the founder, no dedicated team'],['Fundador + 1 persona part-time','Founder + 1 part-time person'],['1-2 personas dedicadas exclusivamente','1-2 exclusively dedicated people'],['Equipo de 3-4 personas','Team of 3-4 people'],['Equipo de 5 o más personas dedicadas','Team of 5+ dedicated people']],w:8,t:'core',naRequired:false},
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Han invertido en certificaciones oficiales de Odoo o en el PLO?',en:'Have they invested in official Odoo certifications or PLO?',o:[['N/A – No sabíamos que existían','N/A – Did not know they existed'],['Sin presupuesto ni planes concretos','No budget or concrete plans'],['Están evaluando si vale la pena','Evaluating whether it is worth it'],['Presupuesto aprobado, aún no ejecutado','Budget approved, not yet executed'],['En proceso activo de certificación o PLO','Actively in certification or PLO process'],['Ya han invertido y tienen certificados oficiales','Already invested and hold official certifications']],w:8,t:'maturity',naRequired:true},
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Cómo llegaron a Odoo y qué tan deliberada fue la decisión de convertirse en partner?',en:'How did they find Odoo and how deliberate was the decision to become a partner?',o:[['Búsqueda casual en Google, sin mucha investigación previa','Casual Google search, not much prior research'],['Un cliente o contacto lo mencionó y lo exploraron','A client or contact mentioned it and they explored it'],['Venían de usar Odoo Community internamente','They were already using Odoo Community internally'],['Un cliente lo pidió específicamente o ya lo habían implementado antes','A client specifically requested it or they had implemented it before'],['Research activo y deliberado comparando opciones de ERP del mercado','Active and deliberate research comparing ERP options in the market']],w:6,t:'aspiration',naRequired:false},
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Cuándo contemplan cerrar su primer proyecto Odoo Enterprise?',en:'When do they plan to close their first Odoo Enterprise project?',o:[['No está en sus planes, no tienen intención','Not in their plans, no intention'],['Más de 12 meses','More than 12 months'],['9-12 meses','9-12 months'],['3-6 meses','3-6 months'],['Ya tienen uno en pipeline o cerrado','Already have one in pipeline or closed']],w:8,t:'core',naRequired:false},
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Qué tan enfocados están en Odoo vs otras plataformas o ERPs?',en:'How focused are they on Odoo vs other platforms or ERPs?',o:[['Odoo es uno de 3+ productos que venden e implementan por igual','Odoo is one of 3+ products they sell and implement equally'],['Tienen otro ERP principal y Odoo es secundario','They have another main ERP and Odoo is secondary'],['Balanceado: Odoo y otra plataforma con peso similar','Balanced: Odoo and another platform with similar weight'],['Odoo es su producto principal, tienen uno complementario','Odoo is their main product, have one complementary tool'],['100% enfocados en Odoo, es su unico producto de implementacion','100% focused on Odoo, it is their only implementation product']],w:8,t:'core',naRequired:false},
+  {b:'PR Quick Profiling',r:'Recruiter',es:'¿Están abiertos a tener reuniones regulares con un Partner Manager de Odoo?',en:'Are they open to having regular meetings with an Odoo Partner Manager?',o:[['No, no les interesa ni lo ven necesario','No, not interested or necessary'],['Prefieren esperar a tener algo concreto primero','Prefer to wait until they have something concrete'],['Tal vez, depende del tema y del valor que aporte','Maybe, depends on topic and value'],['Probablemente sí, están abiertos a la relación','Probably yes, open to the relationship'],['Definitivamente sí, lo ven como una prioridad','Definitely yes, they see it as a priority']],w:8,t:'core',naRequired:false},
+  {b:'PR Quick Profiling',r:'Ambos',es:'¿Qué tipo de proyectos Odoo están haciendo o planean hacer?',en:'What type of Odoo projects are they doing or planning to do?',o:[['N/A – Aún no han arrancado ningún proyecto con clientes','N/A – Have not started any client projects yet'],['Uso interno propio, sin vender a clientes todavía','Internal use only, not selling to clients yet'],['Mayoría Community, algún Enterprise esporádico','Mostly Community, occasional Enterprise'],['Mix 50/50 entre Community y Enterprise','Mix 50/50 between Community and Enterprise'],['Principalmente Enterprise con algún Community','Mainly Enterprise with some Community'],['100% proyectos Enterprise','100% Enterprise projects']],w:10,t:'maturity',naRequired:true},
+  {b:'PR Quick Profiling',r:'Ambos',es:'¿Cuál es el rango de inversión típico que manejan sus clientes en proyectos de implementación?',en:'What is the typical investment range their clients handle in implementation projects?',o:[['N/A – Sin proyectos de referencia todavía','N/A – No reference projects yet'],['LATAM: menos de $5K / USA: menos de $15K USD','LATAM: under $5K / USA: under $15K USD'],['LATAM: $5K–$20K / USA: $15K–$50K USD','LATAM: $5K–$20K / USA: $15K–$50K USD'],['LATAM: $20K–$50K / USA: $50K–$120K USD','LATAM: $20K–$50K / USA: $50K–$120K USD'],['LATAM: $50K–$100K / USA: $120K–$250K USD','LATAM: $50K–$100K / USA: $120K–$250K USD'],['LATAM: más de $100K / USA: más de $250K USD','LATAM: over $100K / USA: over $250K USD']],w:8,t:'maturity',naRequired:true},
+  {b:'Estructura & Equipo',r:'Ambos',es:'¿Cuántas personas trabajan 100% dedicadas a Odoo?',en:'How many people are 100% dedicated to Odoo?',o:[['Nadie dedicado, todos hacen otras cosas también','Nobody dedicated, all do other things too'],['1-2 personas','1-2 people'],['3-4 personas','3-4 people'],['5-7 personas','5-7 people'],['8 o más personas','8 or more people']],w:15,t:'core',naRequired:false},
+  {b:'Estructura & Equipo',r:'Ambos',es:'¿El fundador o CEO está activamente involucrado en la práctica de Odoo?',en:'Is the founder or CEO actively involved in the Odoo practice?',o:[['No, está ausente o delegó completamente','No, absent or fully delegated'],['Menos del 25% de su tiempo','Less than 25% of their time'],['Alrededor del 50% de su tiempo','About 50% of their time'],['75% o más de su tiempo','75% or more of their time'],['100% dedicado a Odoo como prioridad principal','100% dedicated to Odoo as main priority']],w:15,t:'core',naRequired:false},
+  {b:'Estructura & Equipo',r:'Ambos',es:'¿Tienen objetivos o metas definidas para su práctica de Odoo este año?',en:'Do they have defined objectives or goals for their Odoo practice this year?',o:[['No tienen ningún objetivo definido, van al día','No defined objectives at all, day by day'],['Vagas e informales, nada documentado','Vague and informal, nothing documented'],['Cuantitativos básicos (ej. cerrar X proyectos)','Basic quantitative (e.g. close X projects)'],['KPIs claros y medibles con seguimiento','Clear measurable KPIs with tracking'],['OKRs formales con revisión periódica activa','Formal OKRs with active periodic review']],w:10,t:'core',naRequired:false},
+  {b:'Estructura & Equipo',r:'Ambos',es:'¿Tienen capacidad disponible para arrancar un nuevo proyecto de implementación hoy?',en:'Do they have available capacity to start a new implementation project today?',o:[['N/A – Aún no tienen equipo para proyectos','N/A – No team for projects yet'],['No, están al 100% de capacidad sin margen','No, at 100% capacity with no margin'],['Limitada, podrían arrancar en 2-3 meses','Limited, could start in 2-3 months'],['Sí, con algo de planificación previa (1-2 semanas)','Yes, with some prior planning (1-2 weeks)'],['Sí, tienen capacidad disponible ahora mismo','Yes, have capacity available right now'],['Sí, y tienen bench de recursos listos para escalar','Yes, and have bench resources ready to scale']],w:8,t:'maturity',naRequired:true},
+  {b:'Comerciales',r:'PM',es:'¿Cuántas oportunidades Enterprise tienen activas en su pipeline?',en:'How many active Enterprise opportunities do they have in their pipeline?',o:[['N/A – Aún no operan activamente como partner comercial','N/A – Not yet operating actively as a commercial partner'],['Ninguna, no hay pipeline activo','None, no active pipeline'],['1-2 oportunidades','1-2 opportunities'],['3-5 oportunidades','3-5 opportunities'],['6-10 oportunidades activas','6-10 active opportunities'],['Más de 10 oportunidades activas','More than 10 active opportunities']],w:12,t:'maturity',naRequired:true},
+  {b:'Comerciales',r:'PM',es:'¿Cuál es su win rate aproximado en oportunidades Enterprise?',en:'What is their approximate win rate on Enterprise opportunities?',o:[['N/A – Llevan menos de 12 meses operando o sin deals cerrados','N/A – Operating less than 12 months or no closed deals'],['Menos del 20%, muy bajo','Less than 20%, very low'],['20-40%','20-40%'],['40-60%','40-60%'],['60-75%','60-75%'],['Más del 75%, excelente win rate','>75%, excellent win rate']],w:10,t:'maturity',naRequired:true},
+  {b:'Comerciales',r:'PM',es:'¿Tienen equipo o rol comercial dedicado a vender Odoo?',en:'Do they have a dedicated commercial team or role to sell Odoo?',o:[['Completamente oportunista, venden si llega','Completely opportunistic, sell if it comes'],['El fundador vende además de hacer todo lo demás','Founder sells in addition to everything else'],['1 persona comercial dedicada','1 dedicated commercial person'],['2-3 personas en ventas','2-3 people in sales'],['Equipo comercial formal y estructurado','Formal and structured commercial team']],w:12,t:'core',naRequired:false},
+  {b:'Comerciales',r:'PM',es:'¿Tienen un ICP (Ideal Customer Profile) definido para sus proyectos Odoo?',en:'Do they have a defined ICP (Ideal Customer Profile) for their Odoo projects?',o:[['Venden a cualquiera que llegue sin criterio','Sell to anyone without criteria'],['Tienen una idea general pero sin documentar','Have a general idea but undocumented'],['Una vertical parcialmente definida','A partially defined vertical'],['ICP documentado y usado activamente en ventas','Documented ICP actively used in sales'],['ICP + playbooks y scripts de venta por segmento','ICP + playbooks and sales scripts by segment']],w:10,t:'maturity',naRequired:false},
+  {b:'Comerciales',r:'PM',es:'¿Cómo generan sus oportunidades comerciales de Odoo?',en:'How do they generate their Odoo commercial opportunities?',o:[['No tienen proceso, esperan que lleguen solos','No process, wait for them to come'],['Solo referidos informales de clientes actuales','Only informal referrals from current clients'],['Marketing básico: redes sociales o eventos esporádicos','Basic marketing: social media or sporadic events'],['Equipo de marketing o proceso comercial estructurado','Marketing team or structured commercial process'],['Estrategia omnicanal activa: SEO, eventos, alianzas, inbound','Active omnichannel strategy: SEO, events, alliances, inbound']],w:10,t:'core',naRequired:false},
+  {b:'Comerciales',r:'Ambos',es:'¿Cuánto dura típicamente su proceso desde que identifican un lead hasta cerrar el contrato?',en:'How long does their process typically take from identifying a lead to closing the contract?',o:[['N/A – Aún no han cerrado deals suficientes para tener referencia','N/A – Have not closed enough deals to have a reference'],['Más de 9 meses','More than 9 months'],['6 a 9 meses','6 to 9 months'],['3 a 6 meses','3 to 6 months'],['1 a 3 meses','1 to 3 months'],['Menos de 1 mes, proceso muy ágil y eficiente','Less than 1 month, very agile and efficient process']],w:6,t:'maturity',naRequired:true},
+  {b:'Técnicas',r:'PM',es:'¿Cuántos consultores tienen certificación oficial de Odoo (Functional o Technical)?',en:'How many consultants hold an official Odoo certification (Functional or Technical)?',o:[['N/A – Muy nuevos, aún sin tiempo para certificarse','N/A – Too new, not enough time to certify yet'],['Ninguno, llevan tiempo sin certificar a nadie','None, have been around without certifying anyone'],['1 certificado Odoo','1 Odoo certified'],['2 certificados Odoo','2 Odoo certified'],['3 certificados Odoo','3 Odoo certified'],['4 o más certificados Odoo','4 or more Odoo certified']],w:12,t:'maturity',naRequired:true},
+  {b:'Técnicas',r:'PM',es:'¿El equipo tiene certificaciones o experiencia formal en otras herramientas además de Odoo?',en:'Does the team have certifications or formal experience in tools beyond Odoo?',o:[['N/A – Solo trabajan con Odoo, no aplica','N/A – Only work with Odoo, does not apply'],['No, sin ninguna certificación en otras herramientas','No, no certifications in other tools at all'],['Herramientas básicas (Excel avanzado, CRM simple)','Basic tools (advanced Excel, simple CRM)'],['1 ERP o plataforma adicional (SAP, Salesforce, etc.)','1 additional ERP or platform (SAP, Salesforce, etc.)'],['2 ERPs o plataformas adicionales certificadas','2 additional certified ERPs or platforms'],['3 o más plataformas, equipo multi-plataforma consolidado','3+ platforms, consolidated multi-platform team']],w:6,t:'aspiration',naRequired:false},
+  {b:'Técnicas',r:'PM',es:'¿Cuántos módulos de Odoo han implementado en producción con clientes reales?',en:'How many Odoo modules have they implemented in production with real clients?',o:[['N/A – Sin implementaciones en producción aún','N/A – No production implementations yet'],['Solo 1 módulo','Only 1 module'],['2-3 módulos','2-3 modules'],['4-6 módulos','4-6 modules'],['7-10 módulos','7-10 modules'],['Más de 10 módulos, implementaciones complejas multi-área','More than 10 modules, complex multi-area implementations']],w:10,t:'maturity',naRequired:true},
+  {b:'Técnicas',r:'PM',es:'¿Usan Odoo.sh para sus proyectos y tienen un proceso de QA definido?',en:'Do they use Odoo.sh for their projects and have a defined QA process?',o:[['N/A – Sus proyectos son muy simples o aún no implementan','N/A – Projects are very simple or not implementing yet'],['Hosting básico sin proceso de QA','Basic hosting with no QA process'],['Usan Odoo.sh con QA manual básico','Use Odoo.sh with basic manual QA'],['Odoo.sh con staging y proceso semi-automatizado','Odoo.sh with staging and semi-automated process'],['DevOps completo con CI/CD y pruebas automatizadas','Full DevOps with CI/CD and automated testing'],['DevOps avanzado, rollbacks automáticos y monitoreo en producción','Advanced DevOps, automatic rollbacks and production monitoring']],w:8,t:'maturity',naRequired:false},
+  {b:'Técnicas',r:'PM',es:'¿Usan o publican aplicaciones de la tienda oficial de Odoo (apps.odoo.com)?',en:'Do they use or publish applications from the official Odoo store (apps.odoo.com)?',o:[['N/A – No conocen la tienda de apps de Odoo','N/A – Do not know the Odoo app store'],['La conocen pero no la usan actualmente','Know it but do not use it currently'],['La usan ocasionalmente para 1-2 apps','Use it occasionally for 1-2 apps'],['Usan varias apps regularmente en sus proyectos','Use several apps regularly in their projects'],['Publican apps propias con descargas activas','Publish their own apps with active downloads'],['Publican múltiples apps y tienen presencia consolidada en la tienda','Publish multiple apps and have consolidated store presence']],w:6,t:'aspiration',naRequired:false},
+  {b:'Técnicas',r:'PM',es:'¿Realizan integraciones de Odoo con sistemas externos (ERP, ecommerce, logística, etc.)?',en:'Do they do Odoo integrations with external systems (ERP, ecommerce, logistics, etc.)?',o:[['No, sin ninguna experiencia en integraciones','No, no integration experience at all'],['Básicas / imports y exports manuales','Basic / manual imports and exports'],['APIs estándar de Odoo con sistemas comunes','Odoo standard APIs with common systems'],['Integraciones custom complejas a medida','Complex custom integrations'],['Arquitecturas multi-sistema con middleware','Multi-system architectures with middleware']],w:8,t:'core',naRequired:false},
+  {b:'Delivery & CS',r:'PM',es:'¿Tienen una metodología de implementación definida y documentada?',en:'Do they have a defined and documented implementation methodology?',o:[['N/A – Sin proyectos aún para necesitar metodología','N/A – No projects yet to need a methodology'],['Sin proceso formal, cada proyecto es diferente','No formal process, each project is different'],['Proceso semi-estructurado con algunas plantillas','Semi-structured process with some templates'],['Metodología documentada y replicable','Documented and replicable methodology'],['Ágil con mejora continua y lecciones aprendidas','Agile with continuous improvement and lessons learned'],['Metodología certificada, benchmarked y evolucionando activamente','Certified methodology, benchmarked and actively evolving']],w:10,t:'maturity',naRequired:true},
+  {b:'Delivery & CS',r:'PM',es:'¿Cuál es su time-to-value típico? (desde kick-off hasta que el cliente opera en producción)',en:'What is their typical time-to-value? (from kick-off to client operating in production)',o:[['N/A – Sin proyectos completados aún','N/A – No completed projects yet'],['Más de 6 meses','More than 6 months'],['4 a 6 meses','4 to 6 months'],['2 a 4 meses','2 to 4 months'],['Menos de 2 meses','Less than 2 months'],['Menos de 1 mes, implementaciones express con metodología ágil','Less than 1 month, express implementations with agile methodology']],w:8,t:'maturity',naRequired:true},
+  {b:'Delivery & CS',r:'PM',es:'¿Miden formalmente la satisfacción del cliente durante o después de los proyectos?',en:'Do they formally measure customer satisfaction during or after projects?',o:[['N/A – Muy nuevos, sin proyectos suficientes','N/A – Too new, not enough projects'],['Solo feedback informal y conversacional','Only informal conversational feedback'],['Han encuestado 1-2 clientes de forma esporádica','Have surveyed 1-2 clients sporadically'],['Usan NPS o CSAT de forma sistemática','Use NPS or CSAT systematically'],['Sistema formal con acciones de mejora y seguimiento','Formal system with improvement actions and follow-up'],['Programa de éxito del cliente consolidado, reportes periódicos','Consolidated customer success program, periodic reports']],w:8,t:'maturity',naRequired:true},
+  {b:'Delivery & CS',r:'PM',es:'¿Tienen una estrategia de seguimiento y retención con clientes después de cerrar un proyecto?',en:'Do they have a follow-up and retention strategy with clients after closing a project?',o:[['N/A – Sin proyectos cerrados suficientes aún','N/A – Not enough closed projects yet'],['Nada formal, cada proyecto termina y se desconectan','Nothing formal, each project ends and they disconnect'],['Soporte reactivo básico cuando el cliente contacta','Basic reactive support when client reaches out'],['Soporte con SLAs definidos y contratos de mantenimiento','Support with defined SLAs and maintenance contracts'],['Estrategia activa de upsell y expansión de módulos','Active upsell strategy and module expansion'],['Customer success program consolidado con revisión trimestral','Consolidated customer success program with quarterly review']],w:8,t:'maturity',naRequired:true},
+  {b:'Compromiso',r:'PM',es:'¿Con qué frecuencia asisten a trainings, webinars o eventos organizados por Odoo?',en:'How often do they attend trainings, webinars or events organized by Odoo?',o:[['Nunca han asistido a nada de Odoo','Never attended any Odoo event or training'],['Casi nunca, no lo priorizan','Almost never, do not prioritize it'],['De vez en cuando, cuando algo les llama la atención','Occasionally, when something catches their attention'],['Regularmente, al menos una vez al mes','Regularly, at least once a month'],['Muy activos, asisten a todo lo que pueden','Very active, attend everything they can']],w:6,t:'core',naRequired:false},
+  {b:'Compromiso',r:'PM',es:'¿Han participado en iniciativas de co-sell o co-marketing con Odoo?',en:'Have they participated in co-sell or co-marketing initiatives with Odoo?',o:[['N/A – Aún construyendo la capacidad básica','N/A – Still building basic capacity'],['Nos interesa pero no hemos hecho nada aún','Interested but have not done anything yet'],['Hemos hecho 1 piloto o iniciativa conjunta','Have done 1 pilot or joint initiative'],['2-3 iniciativas activas en el año','2-3 active initiatives in the year'],['Colaboración continua y recurrente con Odoo','Continuous and recurring collaboration with Odoo'],['Socio estratégico consolidado, múltiples iniciativas y pipeline compartido','Consolidated strategic partner, multiple initiatives and shared pipeline']],w:6,t:'aspiration',naRequired:false},
+  {b:'Compromiso',r:'PM',es:'¿Qué es lo que más valoran del partnership con Odoo?',en:'What do they value most about the Odoo partnership?',o:[['Principalmente las comisiones y el aspecto económico','Mainly the commissions and economic aspect'],['El producto en sí, lo que pueden vender','The product itself, what they can sell'],['El soporte técnico y acceso a recursos','Technical support and access to resources'],['El prestigio y reconocimiento de la marca Odoo','The prestige and recognition of the Odoo brand'],['Crecer juntos a largo plazo como socios estratégicos','Growing together long-term as strategic partners']],w:6,t:'aspiration',naRequired:false},
+  {b:'Compromiso',r:'PM',es:'¿Están planeando contratar más personas para su práctica de Odoo?',en:'Are they planning to hire more people for their Odoo practice?',o:[['N/A – Están en tamaño estable por decisión estratégica','N/A – At stable size by strategic decision'],['Solo lo están pensando sin nada concreto','Just thinking about it, nothing concrete'],['Lo planean para el próximo año','Planning it for next year'],['Ya están buscando candidatos activamente','Already actively searching for candidates'],['Contratando ahora mismo, proceso abierto','Hiring right now, open process'],['Crecimiento acelerado, múltiples posiciones abiertas simultáneamente','Accelerated growth, multiple positions open simultaneously']],w:6,t:'maturity',naRequired:false},
+  {b:'Clientes & Retención',r:'PM',es:'¿Cuántos clientes Enterprise activos tienen en Odoo actualmente?',en:'How many active Enterprise clients do they currently have in Odoo?',o:[['N/A – Sin clientes Enterprise aún','N/A – No Enterprise clients yet'],['1-2 clientes','1-2 clients'],['3-5 clientes','3-5 clients'],['6-10 clientes','6-10 clients'],['11-20 clientes activos','11-20 active clients'],['Más de 20 clientes Enterprise activos','More than 20 active Enterprise clients']],w:8,t:'maturity',naRequired:true},
+  {b:'Clientes & Retención',r:'PM',es:'¿Cuál es su retention rate aproximado de clientes Odoo año a año?',en:'What is their approximate Odoo client retention rate year over year?',o:[['N/A – Sin datos suficientes todavía','N/A – Not enough data yet'],['Menos del 70%, rotación preocupante','Less than 70%, concerning turnover'],['70-80%, por debajo del promedio','70-80%, below average'],['80-90%, nivel aceptable','80-90%, acceptable level'],['90-95%, muy buena retención','90-95%, very good retention'],['Más del 95%, retención excepcional','More than 95%, exceptional retention']],w:8,t:'maturity',naRequired:true},
+  {b:'Clientes & Retención',r:'PM',es:'¿Han migrado clientes de Odoo Community a Enterprise?',en:'Have they migrated clients from Odoo Community to Enterprise?',o:[['N/A – No aplica a su modelo de negocio actual','N/A – Does not apply to their current business model'],['Ninguna migración realizada','No migrations done'],['1-2 migraciones','1-2 migrations'],['3-5 migraciones','3-5 migrations'],['6-10 migraciones exitosas','6-10 successful migrations'],['Más de 10 migraciones, proceso estandarizado','More than 10 migrations, standardized process']],w:6,t:'aspiration',naRequired:false},
+  {b:'Clientes & Retención',r:'PM',es:'¿Tienen especialización en alguna industria o vertical específica?',en:'Do they have specialization in a specific industry or vertical?',o:[['Sin especialización, atienden cualquier industria','No specialization, serve any industry'],['Clientes muy variados sin foco claro','Very varied clients without clear focus'],['1-2 industrias recurrentes pero sin posicionamiento formal','1-2 recurring industries but no formal positioning'],['Expertos reconocidos en 1 vertical específica','Recognized experts in 1 specific vertical'],['Reconocidos en su mercado como referentes de esa vertical','Recognized in their market as references in that vertical']],w:8,t:'maturity',naRequired:false},
+  {b:'Clientes & Retención',r:'PM',es:'¿Tienen ingresos recurrentes de sus clientes Odoo (soporte, mantenimiento, hosting, SaaS)?',en:'Do they have recurring revenue from their Odoo clients (support, maintenance, hosting, SaaS)?',o:[['N/A – Aún no tienen base de clientes para generar recurrencia','N/A – No client base yet for recurring revenue'],['No, 100% ingresos por proyectos puntuales','No, 100% revenue from one-time projects'],['Algo esporádico, menos del 10% de sus ingresos','Something sporadic, less than 10% of revenue'],['10-30% de sus ingresos son recurrentes','10-30% of revenue is recurring'],['30-50% de ingresos recurrentes, modelo híbrido sólido','30-50% recurring revenue, solid hybrid model'],['Más del 50% recurrentes, modelo MRR consolidado','More than 50% recurring, consolidated MRR model']],w:10,t:'maturity',naRequired:true},
+  {b:'Clientes & Retención',r:'PM',es:'¿Tienen casos de éxito documentados o referencias de clientes que puedan compartir?',en:'Do they have documented success cases or client references they can share?',o:[['N/A – Sin proyectos completados aún','N/A – No completed projects yet'],['No, nada documentado','No, nothing documented'],['Algunos testimonios informales pero nada formal','Some informal testimonials but nothing formal'],['1-2 casos de éxito documentados','1-2 documented success cases'],['3-5 casos documentados con referencias disponibles','3-5 documented cases with available references'],['6 o más casos documentados, video-testimonios o publicados en Odoo.com','6+ documented cases, video testimonials or published on Odoo.com']],w:8,t:'maturity',naRequired:true},
+  {b:'Expansión',r:'PM',es:'¿Operan o tienen planes concretos de operar en más de un país?',en:'Do they operate or have concrete plans to operate in more than one country?',o:[['N/A – Su mercado es exclusivamente local y así lo quieren','N/A – Their market is exclusively local and they want to keep it that way'],['Solo local, sin planes de expansión','Only local, no expansion plans'],['Les interesa expandir pero sin plan concreto','Interested in expanding but no concrete plan'],['Planeando activamente la expansión a otro país','Actively planning expansion to another country'],['Ya operan en 2-3 países','Already operating in 2-3 countries'],['Operan en 4 o más países, presencia regional consolidada','Operating in 4+ countries, consolidated regional presence']],w:6,t:'aspiration',naRequired:false},
+  {b:'Riesgos & Alertas',r:'Ambos',es:'¿Dependen en exceso de 1 o 2 clientes grandes para su facturación?',en:'Do they overly depend on 1 or 2 large clients for their billing?',o:[['N/A – Sin clientes todavía, no aplica','N/A – No clients yet, does not apply'],['Sí, 1-2 clientes representan más del 80% de sus ingresos','Yes, 1-2 clients represent more than 80% of revenue'],['60-80% en pocos clientes, riesgo alto','60-80% in few clients, high risk'],['40-60%, concentración media','40-60%, medium concentration'],['20-40%, razonablemente diversificado','20-40%, reasonably diversified'],['Menos del 20% en cualquier cliente, cartera bien diversificada','Less than 20% in any client, well diversified portfolio']],w:5,t:'maturity',naRequired:false},
+  {b:'Riesgos & Alertas',r:'Ambos',es:'¿Cuál es su rotación de talento en el equipo de Odoo?',en:'What is their talent turnover in the Odoo team?',o:[['N/A – Equipo muy nuevo o muy pequeño, sin historial suficiente','N/A – Team too new or too small, no sufficient history'],['Muy alta, más del 30% anual — inestabilidad crítica','Very high, more than 30% annual — critical instability'],['Alta, 20-30% anual — señal de alerta','High, 20-30% annual — warning signal'],['Media, 10-20% — rotación manejable','Medium, 10-20% — manageable turnover'],['Baja, 5-10% — equipo razonablemente estable','Low, 5-10% — reasonably stable team'],['Muy baja, menos del 5% — equipo muy sólido y fidelizado','Very low, less than 5% — very solid and loyal team']],w:5,t:'maturity',naRequired:false},
+  {b:'Riesgos & Alertas',r:'Ambos',es:'¿Qué porcentaje de sus proyectos actuales son con Odoo Enterprise (vs Community u otros)?',en:'What percentage of their current projects are with Odoo Enterprise (vs Community or others)?',o:[['Menos del 20%, casi todo Community u otras herramientas','Less than 20%, almost all Community or other tools'],['20-40% Enterprise','20-40% Enterprise'],['40-60% Enterprise','40-60% Enterprise'],['60-80% Enterprise','60-80% Enterprise'],['80-100% Enterprise, muy enfocados','80-100% Enterprise, very focused']],w:10,t:'core',naRequired:false}
 ];
 
+// ── CONSTANTS ─────────────────────────────────────────────────────
 let currentLang='es';
 let autosaveTimer=null;
-
-// ── COMMENT VALIDATION ────────────────────────────────────────────
 const MIN_CHARS=15;
 
-function isCommentRequired(scoreVal){
-  // required if N/A or score 1-3
-  if(scoreVal==='NA') return true;
+// N/A questions that require comment (naRequired:true in Q array)
+// Score ≤ 2 always requires comment
+
+function isCommentRequired(qDiv, scoreVal){
+  if(scoreVal==='NA'){
+    return qDiv.dataset.naRequired==='true';
+  }
   const n=parseInt(scoreVal);
-  return !isNaN(n)&&n<=3;
+  return !isNaN(n) && n<=2;
 }
 
 function validateComment(text){
   const t=text.trim();
   if(t.length<MIN_CHARS) return 'short';
-  // Detect filler: single unique char repeated, or ≤2 unique words repeated, or all punctuation/spaces
   const uniqueChars=new Set(t.replace(/\s/g,'')).size;
   if(uniqueChars<=2) return 'filler';
   const words=t.toLowerCase().split(/\s+/).filter(w=>w.length>1);
@@ -751,42 +469,32 @@ function validateComment(text){
     const uniqueWords=new Set(words).size;
     if(words.length>=4&&uniqueWords<=2) return 'filler';
   }
-  // Must have at least 3 words to be real context
   if(words.length<3) return 'short';
   return 'ok';
 }
 
 function getCommentStatus(qDiv){
-  const selected=qDiv.querySelector('input[type="radio"]:checked');
-  if(!selected) return null; // no answer yet, skip
-  const scoreVal=selected.value;
-  if(!isCommentRequired(scoreVal)) return null; // not required
-  const textarea=qDiv.querySelector('textarea');
-  const text=textarea?textarea.value:'';
-  return validateComment(text);
+  const sel=qDiv.querySelector('input[type="radio"]:checked');
+  if(!sel) return null;
+  if(!isCommentRequired(qDiv, sel.value)) return null;
+  const ta=qDiv.querySelector('textarea');
+  return validateComment(ta?ta.value:'');
 }
 
-// Returns {pending, invalid} counts for visible questions
 function getCommentIssues(){
   let pending=0,invalid=0;
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
-    const status=getCommentStatus(qDiv);
-    if(status==='short') pending++;
-    else if(status==='filler') invalid++;
+    const s=getCommentStatus(qDiv);
+    if(s==='short') pending++;
+    else if(s==='filler') invalid++;
   });
   return{pending,invalid};
 }
 
-// ── AUTOSAVE ─────────────────────────────────────────────────────
+// ── AUTOSAVE ──────────────────────────────────────────────────────
 function autosave(){
   try{
-    const data={
-      partnerName:document.getElementById('partnerName').value,
-      partnerManager:document.getElementById('partnerManager').value,
-      roleMode:document.getElementById('roleMode').value,
-      lang:currentLang,
-      answers:{},comments:{}
-    };
+    const data={partnerName:document.getElementById('partnerName').value,partnerManager:document.getElementById('partnerManager').value,roleMode:document.getElementById('roleMode').value,lang:currentLang,answers:{},comments:{}};
     document.querySelectorAll('[data-qid]').forEach(qDiv=>{
       const qid=qDiv.dataset.qid;
       const sel=qDiv.querySelector('input[type="radio"]:checked');
@@ -800,14 +508,8 @@ function autosave(){
     setTimeout(()=>badge.style.opacity='0',2000);
   }catch(e){}
 }
-
-function loadAutosave(){
-  try{
-    const raw=localStorage.getItem('oq360_autosave');
-    if(!raw) return null;
-    return JSON.parse(raw);
-  }catch(e){return null;}
-}
+function loadAutosave(){try{const r=localStorage.getItem('oq360_autosave');return r?JSON.parse(r):null;}catch(e){return null;}}
+function scheduleAutosave(){clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,1500);}
 
 // ── RENDER FORM ───────────────────────────────────────────────────
 function renderForm(savedData){
@@ -817,123 +519,153 @@ function renderForm(savedData){
   root.innerHTML='';
   const grouped={};
   Q.forEach(q=>{if(!grouped[q.b])grouped[q.b]=[];grouped[q.b].push(q);});
-
-  // Compute total weight per block for the weight summary
+  const totalW=Q.reduce((s,q)=>s+q.w,0);
   const blockWeights={};
   Q.forEach(q=>{blockWeights[q.b]=(blockWeights[q.b]||0)+q.w;});
-  const totalAllWeights=Q.reduce((s,q)=>s+q.w,0);
 
+  let globalQIdx=0;
   Object.entries(grouped).forEach(([block,list])=>{
+    const blockPct=Math.round((blockWeights[block]||0)/totalW*100);
     const card=document.createElement('div');
-    card.className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden';
+    card.className='block-card';
 
-    const blockWPct=Math.round((blockWeights[block]||0)/totalAllWeights*100);
-    const header=document.createElement('div');
-    header.className='bg-gradient-to-r from-[#714B67] to-[#8a5d7f] text-white px-4 py-2.5 font-semibold flex items-center justify-between cursor-pointer select-none';
-    header.innerHTML=`
-      <div class="flex items-center gap-2">
-        <span>${block}</span>
-        <span class="block-progress-badge" data-block-prog="${block}">0/${list.length}</span>
-        <span class="block-rf-badge hidden" data-block-rf="${block}"></span>
-      </div>
-      <div class="flex items-center gap-3">
-        <span class="text-xs opacity-60">${blockWPct}% del score</span>
-        <span class="toggle-icon text-white/60 text-sm">▲</span>
+    // Block header
+    const hdr=document.createElement('div');
+    hdr.className='block-header';
+    hdr.innerHTML=`
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="font-bold text-sm">${block}</span>
+          <span class="block-progress-badge" data-block-prog="${block}">0/${list.length}</span>
+          <span class="block-rf-badge hidden" data-block-rf="${block}"></span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div>
+            <div class="block-mini-bar"><div class="block-mini-fill" data-block-fill="${block}" style="width:0%"></div></div>
+          </div>
+          <span class="block-score-pill" data-block-score="${block}">—</span>
+          <span class="text-xs opacity-50">${blockPct}% del score</span>
+          <span class="toggle-icon text-white/50 text-lg font-light">▲</span>
+        </div>
       </div>`;
-    header.addEventListener('click',()=>{
+    hdr.addEventListener('click',()=>{
       const body=card.querySelector('.block-body');
-      const icon=header.querySelector('.toggle-icon');
+      const icon=hdr.querySelector('.toggle-icon');
       const isOpen=body.style.maxHeight!=='0px'&&body.style.maxHeight!=='';
-      body.style.maxHeight=isOpen?'0px':(body.scrollHeight+'px');
+      body.style.maxHeight=isOpen?'0px':(body.scrollHeight+200)+'px';
       icon.textContent=isOpen?'▼':'▲';
     });
-    card.appendChild(header);
+    card.appendChild(hdr);
 
     const body=document.createElement('div');
     body.className='block-body';
     body.style.maxHeight='9999px';
-    const container=document.createElement('div');
-    container.className='p-4 space-y-3';
+    const inner=document.createElement('div');
+    inner.className='p-4 space-y-2';
 
     list.forEach((q,idx)=>{
+      globalQIdx++;
       const qId=`q_${block.replace(/\s+/g,'_')}_${idx}`;
       const question=currentLang==='es'?q.es:q.en;
       const isMorA=q.t==='maturity'||q.t==='aspiration';
-      // hasNA: true only if first option actually starts with N/A (some maturity/aspiration don't have it)
       const hasNA=isMorA&&q.o[0][0].startsWith('N/A');
       const savedAns=savedAnswers[qId];
       const savedCom=savedComments[qId]||'';
-      const needsComment=savedAns?isCommentRequired(savedAns):false;
+      const naReq=q.naRequired===true;
 
       const qDiv=document.createElement('div');
-      qDiv.className='rounded-xl border border-gray-100 p-3 transition-colors';
-      qDiv.dataset.role=q.r;qDiv.dataset.weight=q.w;
-      qDiv.dataset.block=block;qDiv.dataset.qid=qId;qDiv.dataset.qtype=q.t;
+      qDiv.className='q-card';
+      qDiv.dataset.role=q.r;
+      qDiv.dataset.weight=q.w;
+      qDiv.dataset.block=block;
+      qDiv.dataset.qid=qId;
+      qDiv.dataset.qtype=q.t;
+      qDiv.dataset.naRequired=naReq?'true':'false';
 
-      const roleBadge=q.r==='Recruiter'
-        ?'<span class="inline-block px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 font-medium">Recruiter</span>'
-        :q.r==='PM'
-        ?'<span class="inline-block px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 font-medium">PM</span>'
-        :'<span class="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 font-medium">Ambos</span>';
+      // Role pill
+      const roleCls=q.r==='Recruiter'?'role-pill-recruiter':q.r==='PM'?'role-pill-pm':'role-pill-ambos';
+      const roleLabel=q.r==='Ambos'?(currentLang==='es'?'Ambos':'Both'):q.r;
+      const typeCls=`type-${q.t}`;
+      const typeLabel=q.t==='core'?'Core':q.t==='maturity'?'Madurez':'Aspiración';
 
+      // Build options HTML
       let optHTML='';
       if(hasNA){
-        // N/A + scores 1-5 (q.o has 6 items: index 0=N/A, indices 1-5=scores)
         const naText=currentLang==='es'?q.o[0][0]:q.o[0][1];
         const naChk=savedAns==='NA';
-        optHTML+=`<label class="radio-label na-label${naChk?' selected':''}"><input type="radio" name="${qId}" value="NA"${naChk?' checked':''}/><span class="opt-text text-xs text-gray-500 font-bold">N/A</span><span class="text-xs text-gray-400 hidden sm:inline ml-1">– ${naText.replace(/^N\/A\s*[–-]\s*/,'')}</span></label>`;
+        const naCleanText=naText.replace(/^N\/A\s*[–-]\s*/,'');
+        optHTML+=`<label class="opt-card na-card${naChk?' selected':''}" data-val="NA">
+          <input type="radio" name="${qId}" value="NA"${naChk?' checked':''}/>
+          <div class="opt-num" style="font-size:10px;width:32px;height:32px">N/A</div>
+          <div class="opt-label" style="color:#64748b;font-style:italic">${naCleanText}</div>
+        </label>`;
         for(let i=1;i<=5;i++){
           const optText=currentLang==='es'?q.o[i][0]:q.o[i][1];
           const chk=savedAns==i;
-          optHTML+=`<label class="radio-label${chk?' selected':''}"><input type="radio" name="${qId}" value="${i}"${chk?' checked':''}/><span class="opt-text text-xs font-bold text-[#714B67] min-w-[14px]">${i}</span><span class="text-xs text-gray-600">${optText}</span></label>`;
+          const scoreColor=i<=2?'#ef4444':i===3?'#eab308':i>=4?'#22c55e':'';
+          optHTML+=`<label class="opt-card score-${i}${chk?' selected':''}">
+            <input type="radio" name="${qId}" value="${i}"${chk?' checked':''}/>
+            <div class="opt-num">${i}</div>
+            <div class="opt-label">${optText}</div>
+          </label>`;
         }
       } else {
-        // No N/A — scores 1-5 (q.o has exactly 5 items: indices 0-4)
         for(let i=0;i<5;i++){
           const optText=currentLang==='es'?q.o[i][0]:q.o[i][1];
-          const val=i+1;const chk=savedAns==val;
-          optHTML+=`<label class="radio-label${chk?' selected':''}"><input type="radio" name="${qId}" value="${val}"${chk?' checked':''}/><span class="opt-text text-xs font-bold text-[#714B67] min-w-[14px]">${val}</span><span class="text-xs text-gray-600">${optText}</span></label>`;
+          const val=i+1;
+          const chk=savedAns==val;
+          optHTML+=`<label class="opt-card score-${val}${chk?' selected':''}">
+            <input type="radio" name="${qId}" value="${val}"${chk?' checked':''}/>
+            <div class="opt-num">${val}</div>
+            <div class="opt-label">${optText}</div>
+          </label>`;
         }
       }
 
-      const reqBadge=needsComment
-        ?`<span class="comment-required-badge bg-amber-100 text-amber-700">obligatorio</span>`:'';
+      // Determine if comment needed now
+      const needsCommentNow=savedAns?isCommentRequired(qDiv,savedAns):false;
+      const commentStatus=needsCommentNow&&savedCom?validateComment(savedCom):null;
+      const reqCls=getReqClass(savedAns);
+      const commentWrapCls=needsCommentNow
+        ?('comment-wrap '+reqCls+(commentStatus==='ok'?' filled':commentStatus?' error':''))
+        :'comment-wrap';
+
+      const naRequiredNote=naReq?`<div class="na-required-note"><span>📝</span> Si marcas N/A, explica el contexto — este campo es obligatorio</div>`:'';
 
       qDiv.innerHTML=`
-        <div class="flex flex-col lg:flex-row gap-3">
-          <div class="lg:w-5/12">
-            <div class="flex items-start gap-2">
-              ${roleBadge}
-              <p class="text-sm font-medium text-gray-800 question-text leading-snug">${question}</p>
+        <div class="flex items-start gap-3 mb-3">
+          <div class="q-num flex-shrink-0 mt-0.5">${globalQIdx}</div>
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <span class="type-badge ${typeCls}">${typeLabel}</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${roleCls}">${roleLabel}</span>
+              <span class="text-xs text-gray-400 font-medium">Peso: ${q.w}</span>
             </div>
-            <div class="mt-1 text-xs text-gray-400">Peso: <strong class="text-gray-500">${q.w}</strong></div>
+            <p class="text-sm font-semibold text-gray-800 question-text leading-snug">${question}</p>
           </div>
-          <div class="lg:w-4/12">
-            <div class="flex flex-wrap gap-1">${optHTML}</div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 options-grid">
+          ${optHTML}
+        </div>
+        <div class="${commentWrapCls}" id="cwrap_${qId}">
+          ${needsCommentNow?naRequiredNote:''}
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-gray-600 flex items-center gap-1.5">
+              ${needsCommentNow?'<span class="comment-label-status font-bold">✱</span>':''} Comentarios
+              <span class="comment-label-status text-xs font-bold">${needsCommentNow?'Obligatorio ✍️':'<span class="text-gray-400 font-normal">Opcional</span>'}</span>
+            </label>
+            <span class="comment-counter${savedCom.length>=MIN_CHARS?' ok':''}" id="ctr_${qId}">${savedCom.length} / ${MIN_CHARS}</span>
           </div>
-          <div class="lg:w-3/12">
-            <div class="flex items-center gap-1 mb-1">
-              <span class="text-xs text-gray-500">Comentario</span>
-              ${reqBadge}
-            </div>
-            <textarea id="comment_${qId}" rows="2"
-              class="comment-field w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-[#714B67] outline-none resize-none text-gray-700"
-              placeholder="${LANG[currentLang].commentsPlaceholder}">${savedCom}</textarea>
-            <div class="comment-counter${savedCom.length>=MIN_CHARS?' ok':''}" id="ctr_${qId}">${savedCom.length} / ${MIN_CHARS}</div>
-            <div class="comment-msg text-xs text-red-500 mt-0.5 hidden" id="cmsg_${qId}"></div>
-          </div>
+          <textarea id="comment_${qId}" rows="2"
+            class="comment-field${commentStatus==='ok'?' valid':commentStatus?(' invalid'):''}"
+            placeholder="${LANG[currentLang].commentsPlaceholder}">${savedCom}</textarea>
+          <p class="comment-msg text-xs text-red-500 mt-1 font-medium hidden" id="cmsg_${qId}"></p>
         </div>`;
 
-      container.appendChild(qDiv);
-
-      // Style textarea if saved data had comment
-      if(savedCom&&needsComment){
-        const status=validateComment(savedCom);
-        styleCommentField(qId,status);
-      }
+      inner.appendChild(qDiv);
     });
 
-    body.appendChild(container);
+    body.appendChild(inner);
     card.appendChild(body);
     root.appendChild(card);
   });
@@ -942,28 +674,25 @@ function renderForm(savedData){
   document.querySelectorAll('input[type="radio"]').forEach(r=>{
     r.addEventListener('change',e=>{
       const name=e.target.name;
+      // Update all labels in this group
       document.querySelectorAll(`input[name="${name}"]`).forEach(inp=>{
-        inp.closest('.radio-label').classList.toggle('selected',inp.checked);
+        inp.closest('.opt-card').classList.toggle('selected',inp.checked);
       });
-      // Update comment requirement badge
       const qDiv=e.target.closest('[data-qid]');
       if(qDiv){
         const scoreVal=e.target.value;
         const qId=qDiv.dataset.qid;
-        const needsNow=isCommentRequired(scoreVal);
-        const badge=qDiv.querySelector('.comment-required-badge');
-        if(badge) badge.remove();
-        if(needsNow){
-          const labelEl=qDiv.querySelector('.lg\\:w-3\\/12 .flex.items-center span:first-child');
-          if(labelEl) labelEl.insertAdjacentHTML('afterend','<span class="comment-required-badge bg-amber-100 text-amber-700">obligatorio</span>');
-          // validate current comment
-          const ta=qDiv.querySelector('textarea');
-          if(ta) validateAndStyleComment(qId,ta.value);
-        } else {
-          // score 4 or 5 — clear any error state
-          styleCommentField(qId,'ok');
-          const msg=document.getElementById(`cmsg_${qId}`);
-          if(msg){msg.textContent='';msg.classList.add('hidden');}
+        const needsNow=isCommentRequired(qDiv,scoreVal);
+        refreshCommentWrap(qDiv,qId,needsNow,q);
+        if(needsNow){const ta=qDiv.querySelector('textarea');if(ta&&ta.value)validateAndStyleComment(qDiv,qId,ta.value);}
+        else{clearCommentStyle(qId);}
+        // Color the q-card based on score
+        qDiv.classList.remove('answered-ok','red-flag-row');
+        if(scoreVal==='NA'){qDiv.classList.add('answered-ok');}
+        else{
+          const n=parseInt(scoreVal);
+          if(n<=2) qDiv.classList.add('red-flag-row');
+          else qDiv.classList.add('answered-ok');
         }
       }
       recalculate();
@@ -972,30 +701,108 @@ function renderForm(savedData){
   });
 
   document.querySelectorAll('textarea').forEach(ta=>{
-    const qId=ta.id.replace('comment_','');
+    const match=ta.id.match(/^comment_(.+)$/);
+    if(!match) return;
+    const qId=match[1];
     ta.addEventListener('input',()=>{
       const ctr=document.getElementById(`ctr_${qId}`);
-      if(ctr){
-        ctr.textContent=`${ta.value.length} / ${MIN_CHARS}`;
-        ctr.className='comment-counter'+(ta.value.length>=MIN_CHARS?' ok':'');
-      }
-      // Only validate if score requires it
+      if(ctr){ctr.textContent=`${ta.value.length} / ${MIN_CHARS}`;ctr.className='comment-counter'+(ta.value.length>=MIN_CHARS?' ok':'');}
       const qDiv=ta.closest('[data-qid]');
       if(qDiv){
         const sel=qDiv.querySelector('input[type="radio"]:checked');
-        if(sel&&isCommentRequired(sel.value)) validateAndStyleComment(qId,ta.value);
-        else styleCommentField(qId,'ok');
+        if(sel&&isCommentRequired(qDiv,sel.value)) validateAndStyleComment(qDiv,qId,ta.value);
+        else clearCommentStyle(qId);
       }
       scheduleAutosave();
       updateExportState();
     });
   });
+
+  // Apply saved answer styles
+  document.querySelectorAll('[data-qid]').forEach(qDiv=>{
+    const sel=qDiv.querySelector('input[type="radio"]:checked');
+    if(!sel) return;
+    const n=parseInt(sel.value);
+    if(sel.value==='NA') qDiv.classList.add('answered-ok');
+    else if(n<=2) qDiv.classList.add('red-flag-row');
+    else qDiv.classList.add('answered-ok');
+  });
 }
 
-function validateAndStyleComment(qId,text){
+// Helper: find Q object for a qDiv
+function getQForDiv(qDiv){
+  const block=qDiv.dataset.block;
+  const qid=qDiv.dataset.qid;
+  // Extract index from qid: q_Block_Name_idx
+  const parts=qid.split('_');
+  const idx=parseInt(parts[parts.length-1]);
+  const blockQs=Q.filter(q=>q.b===block);
+  return blockQs[idx]||null;
+}
+
+// Returns the CSS class for comment wrap based on score value
+function getReqClass(scoreVal){
+  if(!scoreVal) return 'required-comment';
+  if(scoreVal==='NA') return 'req-na';
+  const n=parseInt(scoreVal);
+  if(n===1) return 'req-score-1';
+  if(n===2) return 'req-score-2';
+  return 'required-comment';
+}
+
+function refreshCommentWrap(qDiv,qId,needsNow,qObj){
+  const wrap=document.getElementById(`cwrap_${qId}`);
+  if(!wrap) return;
+  const naReq=qDiv.dataset.naRequired==='true';
+  const naNote=naReq?`<div class="na-required-note"><span>📝</span> Si marcas N/A, explica el contexto — este campo es obligatorio</div>`:'';
+  // Get current score value to pick the right color class
+  const sel=qDiv.querySelector('input[type="radio"]:checked');
+  const curVal=sel?sel.value:null;
+  const reqCls=getReqClass(curVal);
+  // Preserve filled/error states
+  const isFilled=wrap.classList.contains('filled');
+  const isError=wrap.classList.contains('error');
+  if(needsNow){
+    wrap.className='comment-wrap '+reqCls+(isFilled?' filled':isError?' error':'');
+  } else {
+    wrap.className='comment-wrap';
+  }
+  const labelEl=wrap.querySelector('label');
+  if(labelEl){
+    if(needsNow){
+      labelEl.innerHTML=`<span class="comment-label-status font-bold">✱</span> Comentarios <span class="comment-label-status text-xs font-bold">Obligatorio ✍️</span>`;
+    } else {
+      labelEl.innerHTML=`Comentarios <span class="text-gray-400 text-xs font-normal">Opcional</span>`;
+    }
+  }
+  // Prepend naNote if needed
+  const existingNote=wrap.querySelector('.na-required-note');
+  if(existingNote) existingNote.remove();
+  if(needsNow&&naReq) wrap.insertAdjacentHTML('afterbegin',naNote);
+}
+
+function validateAndStyleComment(qDiv,qId,text){
   const status=validateComment(text);
-  styleCommentField(qId,status);
+  const ta=document.getElementById(`comment_${qId}`);
+  const wrap=document.getElementById(`cwrap_${qId}`);
   const msg=document.getElementById(`cmsg_${qId}`);
+  if(ta){ta.classList.remove('valid','invalid');if(status==='ok')ta.classList.add('valid');else ta.classList.add('invalid');}
+  if(wrap){
+    // Preserve the color class (req-score-1, req-score-2, req-na, required-comment)
+    // Only toggle filled/error
+    wrap.classList.remove('filled','error');
+    if(status==='ok'){
+      wrap.classList.add('filled');
+      // Update label to show completed
+      const labelEl=wrap.querySelector('label');
+      if(labelEl) labelEl.innerHTML=`<span class="comment-label-status font-bold">✓</span> Comentarios <span class="comment-label-status text-xs font-bold">Completado ✓</span>`;
+    } else {
+      wrap.classList.add('error');
+      // Restore obligatorio label
+      const labelEl=wrap.querySelector('label');
+      if(labelEl) labelEl.innerHTML=`<span class="comment-label-status font-bold">✱</span> Comentarios <span class="comment-label-status text-xs font-bold">Obligatorio ✍️</span>`;
+    }
+  }
   if(msg){
     if(status==='short'){msg.textContent=LANG[currentLang].commentTooShort;msg.classList.remove('hidden');}
     else if(status==='filler'){msg.textContent=LANG[currentLang].commentInvalid;msg.classList.remove('hidden');}
@@ -1004,17 +811,18 @@ function validateAndStyleComment(qId,text){
   return status;
 }
 
-function styleCommentField(qId,status){
+function clearCommentStyle(qId){
   const ta=document.getElementById(`comment_${qId}`);
-  if(!ta) return;
-  ta.classList.remove('valid','invalid');
-  if(status==='ok') ta.classList.add('valid');
-  else if(status==='short'||status==='filler') ta.classList.add('invalid');
-}
-
-function scheduleAutosave(){
-  clearTimeout(autosaveTimer);
-  autosaveTimer=setTimeout(autosave,1500);
+  const wrap=document.getElementById(`cwrap_${qId}`);
+  const msg=document.getElementById(`cmsg_${qId}`);
+  if(ta) ta.classList.remove('valid','invalid');
+  if(wrap){
+    wrap.classList.remove('filled','error');
+    // Reset label to Opcional
+    const labelEl=wrap.querySelector('label');
+    if(labelEl) labelEl.innerHTML=`Comentarios <span class="text-gray-400 text-xs font-normal">Opcional</span>`;
+  }
+  if(msg){msg.textContent='';msg.classList.add('hidden');}
 }
 
 // ── RECALCULATE ───────────────────────────────────────────────────
@@ -1025,52 +833,49 @@ function recalculate(){
   let answeredCount=0,totalVisible=0;
   const blockScores={};
   const blockData={};
-  const gaps=[];
 
-  document.querySelectorAll('#formRoot > div').forEach(card=>{
-    const blockEl=card.querySelector('.bg-gradient-to-r span');
-    const block=blockEl?blockEl.textContent.trim():'';
-    let blockTotal=0,blockWeight=0,blockAnswered=0,blockTotal2=0,blockRF=0;
-    const blockList=card.querySelectorAll('[data-qid]');
+  document.querySelectorAll('#formRoot .block-card').forEach(card=>{
+    const blockEl=card.querySelector('[data-block-prog]');
+    const block=blockEl?blockEl.dataset.blockProg:'';
+    let bTotal=0,bWeight=0,bAnswered=0,bRF=0,bVisible=0;
 
-    blockList.forEach(qDiv=>{
+    card.querySelectorAll('[data-qid]').forEach(qDiv=>{
       if(qDiv.classList.contains('hidden')) return;
       const role=qDiv.dataset.role;
       const weight=parseFloat(qDiv.dataset.weight);
       const sel=qDiv.querySelector('input[type="radio"]:checked');
       const shouldCount=(mode==='all')||(mode==='Recruiter'&&(role==='Recruiter'||role==='Ambos'))||(mode==='PM'&&(role==='PM'||role==='Ambos'));
       if(!shouldCount) return;
-      totalVisible++;
+      bVisible++;totalVisible++;
       if(sel){
         const val=sel.value;
-        if(val==='NA'){answeredCount++;return;}
-        answeredCount++;answered=true;
+        if(val==='NA'){answeredCount++;bAnswered++;return;}
+        answeredCount++;bAnswered++;answered=true;
         const num=parseInt(val);
-        const maxVal=5;
-        const ws=(num/maxVal)*weight;
+        const ws=(num/5)*weight;
         totalScore+=ws;totalWeight+=weight;
-        blockTotal+=ws;blockWeight+=weight;
-        blockAnswered++;
-        if(num<=2){redFlags++;blockRF++;qDiv.classList.add('red-flag-row');gaps.push({block,question:qDiv.querySelector('.question-text').textContent,score:num});}
-        else qDiv.classList.remove('red-flag-row');
+        bTotal+=ws;bWeight+=weight;
+        if(num<=2){redFlags++;bRF++;qDiv.classList.add('red-flag-row');qDiv.classList.remove('answered-ok');}
+        else{qDiv.classList.remove('red-flag-row');}
       }
     });
 
-    const visibleCount=[...blockList].filter(d=>!d.classList.contains('hidden')).length;
-    const progBadge=card.querySelector(`[data-block-prog]`);
-    if(progBadge) progBadge.textContent=`${answeredCount>0?blockAnswered:0}/${visibleCount}`;
-    const rfBadge=card.querySelector(`[data-block-rf]`);
-    if(rfBadge){
-      if(blockRF>0){rfBadge.textContent=`🚩${blockRF}`;rfBadge.classList.remove('hidden');}
-      else rfBadge.classList.add('hidden');
-    }
-    if(blockWeight>0) blockScores[block]=(blockTotal/blockWeight)*5;
-    blockData[block]={score:blockWeight>0?(blockTotal/blockWeight)*5:0,weight:blockWeight,answered:blockAnswered};
+    // Update block UI
+    const progBadge=card.querySelector('[data-block-prog]');
+    if(progBadge) progBadge.textContent=`${bAnswered}/${bVisible}`;
+    const rfBadge=card.querySelector('[data-block-rf]');
+    if(rfBadge){if(bRF>0){rfBadge.textContent=`🚩 ${bRF}`;rfBadge.classList.remove('hidden');}else rfBadge.classList.add('hidden');}
+    const bScore=bWeight>0?(bTotal/bWeight)*5:0;
+    if(bWeight>0) blockScores[block]=bScore;
+    const scorePill=card.querySelector('[data-block-score]');
+    if(scorePill) scorePill.textContent=bWeight>0?bScore.toFixed(1)+'':'—';
+    const fill=card.querySelector('[data-block-fill]');
+    if(fill) fill.style.width=(bWeight>0?(bScore/5*100).toFixed(0):0)+'%';
   });
 
   const pct=totalVisible>0?Math.round(answeredCount/totalVisible*100):0;
   document.getElementById('progressBar').style.width=pct+'%';
-  document.getElementById('progressText').textContent=`${answeredCount} / ${totalVisible}`;
+  document.getElementById('progressText').textContent=`${answeredCount} / ${totalVisible} respondidas`;
 
   if(totalWeight>0) totalScore=(totalScore/totalWeight)*5;
 
@@ -1081,7 +886,6 @@ function recalculate(){
 
   const subcategory=getSubcategory(totalScore,category,blockScores,redFlags);
   const subcatDisplay={Flagship:'Flagship / Champion',Established:currentLang==='es'?'Establecido':'Established',Transforming:currentLang==='es'?'En Transformación':'Transforming',Vertical:currentLang==='es'?'Enfoque Vertical':'Vertical-Focused',Expanding:currentLang==='es'?'En Expansión':'Expanding',Broad:currentLang==='es'?'Base Amplia':'Broad-Based',Emerging:currentLang==='es'?'Emergente':'Emerging',AtRisk:currentLang==='es'?'En Riesgo':'At-Risk',Transactional:currentLang==='es'?'Transaccional':'Transactional',EndUser:'End-User',Community:currentLang==='es'?'Enfoque Community':'Community-Focused',Inactive:currentLang==='es'?'Inactivo':'Inactive',Dormant:currentLang==='es'?'Dormido':'Dormant'};
-
   const subcatKey=category.replaceAll(' ','')+'-'+subcategory;
 
   document.getElementById('badgeType').textContent=answered?category:'—';
@@ -1098,132 +902,71 @@ function recalculate(){
     document.getElementById('displayCategory').textContent=category;
     document.getElementById('displaySubcategory').textContent=subcatDisplay[subcategory]||subcategory;
     document.getElementById('scoreBar').style.width=(totalScore/5*100).toFixed(1)+'%';
-    generateStaticPlan(subcatKey,blockScores,gaps,redFlags);
+    // Block scores panel
+    const bList=document.getElementById('blockScoresList');
+    bList.innerHTML='';
+    Object.entries(blockScores).forEach(([b,s])=>{
+      const pct2=(s/5*100).toFixed(0);
+      const color=s>=4?'#22c55e':s>=3?'#eab308':s>=2?'#f97316':'#ef4444';
+      bList.innerHTML+=`<div class="flex items-center gap-2">
+        <span class="text-white/60 truncate flex-1" style="font-size:10px">${b}</span>
+        <div style="width:60px;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden">
+          <div style="width:${pct2}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${color};min-width:28px;text-align:right">${s.toFixed(1)}</span>
+      </div>`;
+    });
+    generateStaticPlan(subcatKey,blockScores,redFlags);
   } else {
     document.getElementById('resultsSummary').classList.add('hidden');
   }
-
   updateExportState();
 }
 
-// ── STATIC ACTION PLAN (fallback) ────────────────────────────────
-function generateStaticPlan(subcatKey,blockScores,gaps,redFlags){
+// ── STATIC PLAN ───────────────────────────────────────────────────
+function generateStaticPlan(subcatKey,blockScores,redFlags){
   const lang=currentLang;
-  const baseActions={
-    'Strategic-Flagship':{es:['Invitar al programa elite de partners','Co-crear casos de éxito y testimonials','Acceso anticipado a nuevas features','Invitar como speakers en eventos Odoo','Considerar para Advisory Board'],en:['Invite to elite partner program','Co-create success stories','Early access to new features','Invite as event speakers','Consider for Advisory Board']},
-    'Strategic-Established':{es:['Relación cercana con PM dedicado','Priorizar co-sell activo','Webinars avanzados conjuntos','Apoyo en expansión a nuevas verticales'],en:['Close PM relationship','Prioritize co-sell','Advanced joint webinars','Support vertical expansion']},
-    'Strategic-Transforming':{es:['Plan 30-60-90 con PM dedicado','Enablement en mejores prácticas','Conectar con partners exitosos del network','Revisión trimestral de KPIs'],en:['30-60-90 plan with dedicated PM','Best practices enablement','Connect with successful network partners','Quarterly KPI review']},
-    'Growth-Vertical':{es:['Materiales de marketing para su vertical','Listings en Odoo.com por industria','Conexiones con clientes de esa vertical','Invitar a Partner Day'],en:['Vertical marketing materials','Odoo.com industry listings','Vertical customer connections','Invite to Partner Day']},
-    'Growth-Expanding':{es:['Success Packs con descuento','Apoyo en certificaciones técnicas','Tracking mensual del pipeline','Sesiones de enablement del equipo'],en:['Discounted Success Packs','Certifications support','Monthly pipeline tracking','Team enablement sessions']},
-    'Growth-Broad':{es:['Definir enfoque estratégico prioritario','Análisis de vertical más prometedora','Plan de especialización a 6 meses','Revisión conjunta de pipeline'],en:['Define strategic focus','Promising vertical analysis','6-month specialization plan','Joint pipeline review']},
-    'Active-Emerging':{es:['Onboarding intensivo primeras semanas','Asignar buddy partner experimentado','Milestones a 90 días','Check-in semanal las primeras 4 semanas'],en:['Intensive onboarding','Experienced buddy partner','90-day milestones','Weekly check-in first 4 weeks']},
-    'Active-Transactional':{es:['Evaluar sostenibilidad del modelo','Formalizar procesos comerciales','Training en metodologías','Recalificación en 60 días'],en:['Evaluate model sustainability','Formalize processes','Methodology training','Requalification in 60 days']},
-    'Active-AtRisk':{es:['Intervención urgente del PM','Health-check completo','Plan de recuperación 30-60 días','Reclasificar si no hay mejora'],en:['Urgent PM intervention','Complete health-check','30-60 day recovery plan','Reclassify if no improvement']},
-    'LowFit-EndUser':{es:['Cerrar como end-customer directo','Referir a Direct Sales','Redirigir a Odoo Success','Eliminar del roster activo'],en:['Close as end-customer','Refer to Direct Sales','Redirect to Odoo Success','Remove from active roster']},
-    'LowFit-Community':{es:['Emails educativos Enterprise vs Community','Webinar comparativo','2 oportunidades de reengagement','Archivar si no responden en 30 días'],en:['Educational Enterprise emails','Comparison webinar','2 reengagement opportunities','Archive if no response in 30 days']},
-    'LowFit-Inactive':{es:['Última campaña de reactivación','Reunión "¿qué podríamos mejorar?"','Marcar Dormant si no responde','Mover a nurturing pasivo'],en:['Last reactivation campaign','"What could we improve?" meeting','Mark as Dormant','Move to passive nurturing']},
-    'LowFit-Dormant':{es:['Email trimestral con novedades','Newsletters generales','Monitoring pasivo','Evaluar reactivación futura'],en:['Quarterly news email','General newsletters','Passive monitoring','Evaluate future reactivation']}
+  const base={
+    'Strategic-Flagship':{es:['Invitar al programa elite de partners','Co-crear casos de éxito y testimonials','Acceso anticipado a nuevas features','Invitar como speakers en eventos Odoo'],en:['Invite to elite partner program','Co-create success stories','Early access to new features','Invite as event speakers']},
+    'Strategic-Established':{es:['Relación cercana con PM dedicado','Priorizar co-sell activo','Webinars avanzados conjuntos','Apoyo en expansión vertical'],en:['Close PM relationship','Prioritize co-sell','Advanced joint webinars','Support vertical expansion']},
+    'Strategic-Transforming':{es:['Plan 30-60-90 con PM dedicado','Enablement en mejores prácticas','Conectar con partners exitosos','Revisión trimestral de KPIs'],en:['30-60-90 plan with PM','Best practices enablement','Connect with top partners','Quarterly KPI review']},
+    'Growth-Vertical':{es:['Materiales de marketing vertical','Listings en Odoo.com industria','Conexiones con clientes verticales','Invitar a Partner Day'],en:['Vertical marketing materials','Odoo.com industry listings','Vertical customer connections','Invite to Partner Day']},
+    'Growth-Expanding':{es:['Success Packs con descuento','Apoyo en certificaciones','Tracking mensual pipeline','Enablement del equipo'],en:['Discounted Success Packs','Certifications support','Monthly pipeline tracking','Team enablement']},
+    'Growth-Broad':{es:['Definir enfoque estratégico','Análisis de vertical prometedora','Plan especialización 6 meses','Revisión de pipeline'],en:['Define strategic focus','Promising vertical analysis','6-month specialization plan','Pipeline review']},
+    'Active-Emerging':{es:['Onboarding intensivo','Buddy partner experimentado','Milestones a 90 días','Check-in semanal 4 semanas'],en:['Intensive onboarding','Experienced buddy partner','90-day milestones','Weekly check-in 4 weeks']},
+    'Active-Transactional':{es:['Evaluar sostenibilidad del modelo','Formalizar procesos comerciales','Training en metodologías','Recalificación en 60 días'],en:['Evaluate model sustainability','Formalize processes','Methodology training','Requalification 60 days']},
+    'Active-AtRisk':{es:['Intervención urgente del PM','Health-check completo','Plan recuperación 30-60 días','Reclasificar si no mejora'],en:['Urgent PM intervention','Complete health-check','30-60 day recovery plan','Reclassify if no improvement']},
+    'LowFit-EndUser':{es:['Cerrar como end-customer','Referir a Direct Sales','Redirigir a Odoo Success','Eliminar del roster activo'],en:['Close as end-customer','Refer to Direct Sales','Redirect to Odoo Success','Remove from active roster']},
+    'LowFit-Community':{es:['Emails educativos Enterprise','Webinar comparativo','2 oportunidades reengagement','Archivar si no responden'],en:['Educational Enterprise emails','Comparison webinar','2 reengagement opportunities','Archive if no response']},
+    'LowFit-Inactive':{es:['Última campaña reactivación','"¿Qué podríamos mejorar?"','Marcar Dormant','Nurturing pasivo'],en:['Last reactivation campaign','"What could we improve?"','Mark as Dormant','Passive nurturing']},
+    'LowFit-Dormant':{es:['Email trimestral novedades','Newsletters generales','Monitoring pasivo','Evaluar reactivación futura'],en:['Quarterly news email','General newsletters','Passive monitoring','Evaluate future reactivation']}
   };
-  const actions=[...(baseActions[subcatKey]?baseActions[subcatKey][lang]:[])];
-  if(redFlags>=5) actions.push(lang==='es'?`⚠️ CRÍTICO: ${redFlags} red flags – atención inmediata`:`⚠️ CRITICAL: ${redFlags} red flags – immediate attention`);
-  else if(redFlags>=3) actions.push(lang==='es'?`⚠️ ${redFlags} red flags – revisar áreas débiles`:`⚠️ ${redFlags} red flags – review weak areas`);
-  if(blockScores['Técnicas']&&blockScores['Técnicas']<2.5) actions.push(lang==='es'?'🎯 Prioridad técnica: impulsar certificaciones':'🎯 Technical priority: push certifications');
-  if(blockScores['Comerciales']&&blockScores['Comerciales']<2.5) actions.push(lang==='es'?'🎯 Prioridad comercial: desarrollar pipeline Enterprise':'🎯 Commercial priority: develop Enterprise pipeline');
-  if(blockScores['Estructura & Equipo']&&blockScores['Estructura & Equipo']<3.0) actions.push(lang==='es'?'🎯 Equipo: fortalecer dedicación a Odoo':'🎯 Team: strengthen Odoo dedication');
-  renderActionPlan(actions.slice(0,6));
-}
-
-function renderActionPlan(actions){
+  const actions=[...(base[subcatKey]?base[subcatKey][lang]:[])];
+  if(redFlags>=5) actions.push(lang==='es'?`⚠️ CRÍTICO: ${redFlags} red flags`:`⚠️ CRITICAL: ${redFlags} red flags`);
+  else if(redFlags>=3) actions.push(lang==='es'?`⚠️ ${redFlags} red flags detectados`:`⚠️ ${redFlags} red flags detected`);
+  if(blockScores['Técnicas']&&blockScores['Técnicas']<2.5) actions.push(lang==='es'?'🎯 Certificaciones técnicas urgentes':'🎯 Urgent technical certifications');
+  if(blockScores['Comerciales']&&blockScores['Comerciales']<2.5) actions.push(lang==='es'?'🎯 Desarrollar pipeline Enterprise':'🎯 Develop Enterprise pipeline');
+  if(blockScores['Estructura & Equipo']&&blockScores['Estructura & Equipo']<3.0) actions.push(lang==='es'?'🎯 Fortalecer equipo dedicado':'🎯 Strengthen dedicated team');
   const list=document.getElementById('actionPlanList');
   list.innerHTML='';
-  actions.forEach(a=>{
+  actions.slice(0,6).forEach(a=>{
     const d=document.createElement('div');
-    d.className='flex items-start gap-2 bg-white/10 px-2.5 py-1.5 rounded-lg text-xs';
-    d.innerHTML=`<span class="opacity-50 mt-0.5 flex-shrink-0">•</span><span>${a}</span>`;
+    d.className='text-xs bg-white/10 px-2.5 py-1.5 rounded-lg flex items-start gap-2';
+    d.innerHTML=`<span class="opacity-50 flex-shrink-0 mt-0.5">•</span><span>${a}</span>`;
     list.appendChild(d);
   });
 }
 
-
-// ── EXPORT STATE ──────────────────────────────────────────────────
-function updateExportState(){
-  const score=document.getElementById('footerScore').textContent;
-  const partner=document.getElementById('partnerName').value.trim();
-  const pm=document.getElementById('partnerManager').value.trim();
-
-  const issues=getCommentIssues();
-  const noScore=score==='—';
-  const noMeta=!partner||!pm;
-
-  // Count unanswered visible questions
-  let unanswered=0;
-  document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
-    const sel=qDiv.querySelector('input[type="radio"]:checked');
-    if(!sel) unanswered++;
-  });
-
-  const totalIssues=issues.pending+issues.invalid+unanswered+(noMeta?1:0)+(noScore?1:0);
-  const isBlocked=totalIssues>0;
-
-  const pdfBtn=document.getElementById('btnPDF');
-  const xlsxBtn=document.getElementById('btnXLSX');
-  const banner=document.getElementById('exportBlockerBanner');
-  const blockerDetail=document.getElementById('blockerDetail');
-  const footerMsg=document.getElementById('footerBlockMsg');
-
-  if(isBlocked){
-    pdfBtn.classList.add('btn-locked');
-    xlsxBtn.classList.add('btn-locked');
-    banner.classList.remove('hidden');
-    footerMsg.classList.remove('hidden');
-
-    const parts=[];
-    if(noMeta) parts.push(currentLang==='es'?'Faltan nombre del partner o salesperson':'Missing partner name or salesperson');
-    if(noScore) parts.push(currentLang==='es'?'Responde al menos una pregunta':'Answer at least one question');
-    if(unanswered>0) parts.push(currentLang==='es'?`${unanswered} pregunta(s) sin responder`:`${unanswered} unanswered question(s)`);
-    if(issues.pending>0) parts.push(currentLang==='es'?`${issues.pending} comentario(s) demasiado corto(s) (mín. 15 chars)`:`${issues.pending} comment(s) too short (min. 15 chars)`);
-    if(issues.invalid>0) parts.push(currentLang==='es'?`${issues.invalid} comentario(s) con texto de relleno`:`${issues.invalid} comment(s) with filler text`);
-
-    const msg=parts.join(' · ');
-    blockerDetail.textContent=msg;
-    footerMsg.textContent=`⚠️ ${msg}`;
-  } else {
-    pdfBtn.classList.remove('btn-locked');
-    xlsxBtn.classList.remove('btn-locked');
-    banner.classList.add('hidden');
-    footerMsg.classList.add('hidden');
-  }
-}
-
-// ── SUBCATEGORY & FILTERS ─────────────────────────────────────────
+// ── SUBCATEGORY ───────────────────────────────────────────────────
 function getSubcategory(totalScore,category,blockScores,redFlags){
-  const estructura=blockScores['Estructura & Equipo']||0;
-  const comercial=blockScores['Comerciales']||0;
-  const compromiso=blockScores['Compromiso']||0;
-  const clientes=blockScores['Clientes & Retención']||0;
-  const quickProf=blockScores['PR Quick Profiling']||0;
-  const delivery=blockScores['Delivery & CS']||0;
-  if(category==='Strategic'){
-    if(totalScore>=4.6&&compromiso>=4.5&&clientes>=4.5) return 'Flagship';
-    if(estructura>=4.5&&clientes>=4.0&&redFlags===0) return 'Established';
-    return 'Transforming';
-  }
-  if(category==='Growth'){
-    if(comercial>=4.0) return 'Vertical';
-    if(estructura>=3.5&&comercial>=3.5) return 'Expanding';
-    return 'Broad';
-  }
-  if(category==='Active'){
-    if(totalScore>=3.3&&compromiso>=3.0) return 'Emerging';
-    if(redFlags>=3||clientes<2.5) return 'AtRisk';
-    return 'Transactional';
-  }
-  if(quickProf<2.0) return 'EndUser';
-  if(delivery<2.0) return 'Community';
-  if(compromiso<1.5) return 'Inactive';
-  return 'Dormant';
+  const E=blockScores['Estructura & Equipo']||0,C=blockScores['Comerciales']||0,K=blockScores['Compromiso']||0,R=blockScores['Clientes & Retención']||0,P=blockScores['PR Quick Profiling']||0,D=blockScores['Delivery & CS']||0;
+  if(category==='Strategic'){if(totalScore>=4.6&&K>=4.5&&R>=4.5)return 'Flagship';if(E>=4.5&&R>=4.0&&redFlags===0)return 'Established';return 'Transforming';}
+  if(category==='Growth'){if(C>=4.0)return 'Vertical';if(E>=3.5&&C>=3.5)return 'Expanding';return 'Broad';}
+  if(category==='Active'){if(totalScore>=3.3&&K>=3.0)return 'Emerging';if(redFlags>=3||R<2.5)return 'AtRisk';return 'Transactional';}
+  if(P<2.0)return 'EndUser';if(D<2.0)return 'Community';if(K<1.5)return 'Inactive';return 'Dormant';
 }
 
+// ── FILTERS ───────────────────────────────────────────────────────
 function applyFilters(){
   const mode=document.getElementById('roleMode').value;
   const search=document.getElementById('searchBox').value.toLowerCase().trim();
@@ -1236,79 +979,73 @@ function applyFilters(){
   });
 }
 
-function updateLanguage(){
-  document.getElementById('langText').textContent=currentLang.toUpperCase();
-  const L=LANG[currentLang];
-  Object.keys(L).forEach(key=>{const el=document.getElementById(key);if(el)el.textContent=L[key];});
-  const saved=loadAutosave();
-  renderForm(saved&&saved.lang===currentLang?saved:null);
-  applyFilters();
-  recalculate();
+// ── EXPORT STATE ──────────────────────────────────────────────────
+function updateExportState(){
+  const score=document.getElementById('footerScore').textContent;
+  const partner=document.getElementById('partnerName').value.trim();
+  const pm=document.getElementById('partnerManager').value.trim();
+  const issues=getCommentIssues();
+  let unanswered=0;
+  document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{if(!qDiv.querySelector('input[type="radio"]:checked'))unanswered++;});
+  const noScore=score==='—',noMeta=!partner||!pm;
+  const isBlocked=issues.pending+issues.invalid+unanswered+(noMeta?1:0)+(noScore?1:0)>0;
+  const pdfBtn=document.getElementById('btnPDF'),xlsxBtn=document.getElementById('btnXLSX');
+  const banner=document.getElementById('exportBlockerBanner'),detail=document.getElementById('blockerDetail'),footerMsg=document.getElementById('footerBlockMsg');
+  if(isBlocked){
+    pdfBtn.classList.add('btn-locked');xlsxBtn.classList.add('btn-locked');
+    banner.classList.remove('hidden');footerMsg.classList.remove('hidden');
+    const parts=[];
+    if(noMeta) parts.push(currentLang==='es'?'Falta nombre del partner o salesperson':'Missing partner name or salesperson');
+    if(noScore) parts.push(currentLang==='es'?'Responde al menos una pregunta':'Answer at least one question');
+    if(unanswered>0) parts.push(currentLang==='es'?`${unanswered} pregunta(s) sin responder`:`${unanswered} unanswered question(s)`);
+    if(issues.pending>0) parts.push(currentLang==='es'?`${issues.pending} comentario(s) incompleto(s) — mín. 15 chars`:`${issues.pending} incomplete comment(s) — min. 15 chars`);
+    if(issues.invalid>0) parts.push(currentLang==='es'?`${issues.invalid} comentario(s) con texto de relleno`:`${issues.invalid} filler comment(s)`);
+    const msg=parts.join(' · ');
+    detail.textContent=msg;footerMsg.textContent=`⚠️ ${msg}`;
+  } else {
+    pdfBtn.classList.remove('btn-locked');xlsxBtn.classList.remove('btn-locked');
+    banner.classList.add('hidden');footerMsg.classList.add('hidden');
+  }
 }
 
-// ── PDF EXPORT ────────────────────────────────────────────────────
+// ── WEIGHT SUMMARY FOR PDF ────────────────────────────────────────
 function buildWeightSummaryHTML(){
-  const grouped={};
-  Q.forEach(q=>{if(!grouped[q.b])grouped[q.b]=[];grouped[q.b].push(q);});
+  const grouped={};Q.forEach(q=>{if(!grouped[q.b])grouped[q.b]=[];grouped[q.b].push(q);});
   const totalW=Q.reduce((s,q)=>s+q.w,0);
   let html='';
-
   Object.entries(grouped).forEach(([block,list])=>{
-    const blockW=list.reduce((s,q)=>s+q.w,0);
-    const blockPct=Math.round(blockW/totalW*100);
-    const barWidth=Math.round(blockPct*2.5); // max ~250px for 100%
-
-    html+=`<div style="margin-bottom:12px">
+    const bW=list.reduce((s,q)=>s+q.w,0);
+    const bPct=Math.round(bW/totalW*100);
+    html+=`<div style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <strong style="font-size:11px;color:#714B67;min-width:160px">${block}</strong>
         <div style="flex:1;background:#f3e8f0;border-radius:4px;height:8px;overflow:hidden">
-          <div style="width:${blockPct}%;background:#714B67;height:100%;border-radius:4px"></div>
+          <div style="width:${bPct}%;background:#714B67;height:100%;border-radius:4px"></div>
         </div>
-        <span style="font-size:10px;color:#714B67;font-weight:bold;min-width:35px">${blockPct}%</span>
-        <span style="font-size:10px;color:#999">(peso ${blockW})</span>
+        <span style="font-size:10px;color:#714B67;font-weight:bold;min-width:35px">${bPct}%</span>
+        <span style="font-size:10px;color:#999">(peso ${bW})</span>
       </div>
       <table style="width:100%;font-size:9px;border-collapse:collapse;margin-left:8px">
-        <thead>
-          <tr style="background:#f8f4f7">
-            <th style="padding:3px 5px;text-align:left;border:1px solid #e9e3ee;width:60%">Pregunta</th>
-            <th style="padding:3px 5px;text-align:center;border:1px solid #e9e3ee;width:10%">Peso</th>
-            <th style="padding:3px 5px;text-align:center;border:1px solid #e9e3ee;width:10%">% del total</th>
-            <th style="padding:3px 5px;text-align:center;border:1px solid #e9e3ee;width:10%">Tipo</th>
-          </tr>
-        </thead>
+        <thead><tr style="background:#f8f4f7"><th style="padding:3px 5px;text-align:left;border:1px solid #e9e3ee;width:58%">Pregunta</th><th style="padding:3px 5px;text-align:center;border:1px solid #e9e3ee;width:9%">Peso</th><th style="padding:3px 5px;text-align:center;border:1px solid #e9e3ee;width:9%">% Total</th><th style="padding:3px 5px;text-align:center;border:1px solid #e9e3ee;width:12%">Tipo</th><th style="padding:3px 5px;text-align:center;border:1px solid #e9e3ee;width:12%">Rol</th></tr></thead>
         <tbody>`;
-
     list.forEach(q=>{
       const qPct=(q.w/totalW*100).toFixed(1);
-      const tipoBadge=q.t==='core'?'Core (1-5)':q.t==='maturity'?'Maturity (1-4)':'Aspiration (1-4)';
-      const tipoColor=q.t==='core'?'#1e40af':q.t==='maturity'?'#7c3aed':'#0f766e';
-      html+=`<tr>
-          <td style="padding:3px 5px;border:1px solid #e9e3ee">${currentLang==='es'?q.es:q.en}</td>
-          <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;font-weight:bold">${q.w}</td>
-          <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center">${qPct}%</td>
-          <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;color:${tipoColor};font-size:8px">${tipoBadge}</td>
-        </tr>`;
+      const tc=q.t==='core'?'#1e40af':q.t==='maturity'?'#5b21b6':'#713f12';
+      html+=`<tr><td style="padding:3px 5px;border:1px solid #e9e3ee">${currentLang==='es'?q.es:q.en}</td><td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;font-weight:bold">${q.w}</td><td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center">${qPct}%</td><td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;color:${tc};font-size:8px">${q.t}</td><td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;font-size:8px">${q.r}</td></tr>`;
     });
-
     html+=`</tbody></table></div>`;
   });
-
-  html+=`<div style="margin-top:10px;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:5px;font-size:9px;color:#166534">
-    <strong>Cómo leer esta tabla:</strong> "Core (1-5)" significa que la pregunta tiene rango completo de 1 a 5. 
-    "Maturity/Aspiration (1-4)" tienen N/A como opción adicional y el score máximo es 4. 
-    El peso indica la importancia relativa — una pregunta con peso 15 impacta 3x más que una con peso 5.
-  </div>`;
-
+  html+=`<div style="margin-top:10px;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:5px;font-size:9px;color:#166534"><strong>Cómo leer:</strong> "core" = escala 1–5. "maturity/aspiration" = N/A + 1–5. Peso mayor = más impacto en score final.</div>`;
   return html;
 }
 
+// ── PDF ───────────────────────────────────────────────────────────
 document.getElementById('btnPDF').addEventListener('click',()=>{
   const partner=document.getElementById('partnerName').value.trim();
   const pm=document.getElementById('partnerManager').value.trim();
   if(!partner||!pm){alert(LANG[currentLang].alertNoData);return;}
   const totalScore=document.getElementById('footerScore').textContent;
   if(totalScore==='—'){alert(LANG[currentLang].alertNoResponses);return;}
-
   document.getElementById('pdfDate').textContent=new Date().toLocaleString(currentLang==='es'?'es-ES':'en-US');
   document.getElementById('pdfPartner').textContent=partner;
   document.getElementById('pdfPM').textContent=pm;
@@ -1316,15 +1053,10 @@ document.getElementById('btnPDF').addEventListener('click',()=>{
   document.getElementById('pdfType').textContent=document.getElementById('footerType').textContent;
   document.getElementById('pdfSubcat').textContent=document.getElementById('displaySubcategory').textContent;
   document.getElementById('pdfRF').textContent=document.getElementById('footerRF').textContent;
-
   const apItems=document.getElementById('actionPlanList').querySelectorAll('span:last-child');
   const pdfAP=document.getElementById('pdfActionPlan');
   pdfAP.innerHTML='';
-  apItems.forEach(item=>{
-    const p=document.createElement('p');p.style.margin='2px 0';
-    p.textContent='• '+item.textContent;pdfAP.appendChild(p);
-  });
-
+  apItems.forEach(item=>{const p=document.createElement('p');p.style.margin='2px 0';p.textContent='• '+item.textContent;pdfAP.appendChild(p);});
   const tbody=document.getElementById('pdfBody');
   tbody.innerHTML='';
   let hasData=false;
@@ -1333,62 +1065,49 @@ document.getElementById('btnPDF').addEventListener('click',()=>{
     if(!sel) return;
     hasData=true;
     const val=sel.value;
-    const row=document.createElement('tr');
     const isNA=val==='NA';
     const isBad=!isNA&&parseInt(val)<=2;
-    row.style.background=isBad?'#fff1f2':isNA?'#f8fafc':'white';
-    // Get the selected option's description text from the label
-    const selLabel=qDiv.querySelector(`label.radio-label.selected .text-xs.text-gray-600`);
+    const selLabel=qDiv.querySelector('label.opt-card.selected .opt-label');
     const optionText=isNA?'N/A':(selLabel?selLabel.textContent.trim():'—');
-    row.innerHTML=`<td style="padding:4px 5px;border:1px solid #ddd">${qDiv.dataset.block}</td>
-      <td style="padding:4px 5px;border:1px solid #ddd">${qDiv.dataset.role}</td>
-      <td style="padding:4px 5px;border:1px solid #ddd">${qDiv.querySelector('.question-text').textContent}</td>
-      <td style="padding:4px 5px;border:1px solid #ddd;text-align:center;font-weight:bold;color:${isNA?'#64748b':isBad?'#dc2626':'#16a34a'}">${val}</td>
-      <td style="padding:4px 5px;border:1px solid #ddd;font-style:italic;color:#374151">${optionText}</td>
-      <td style="padding:4px 5px;border:1px solid #ddd">${qDiv.querySelector('textarea').value||'—'}</td>`;
+    const row=document.createElement('tr');
+    row.style.background=isBad?'#fff5f5':isNA?'#f8fafc':'white';
+    row.innerHTML=`<td style="padding:5px 6px;border:1px solid #e5e7eb">${qDiv.dataset.block}</td>
+      <td style="padding:5px 6px;border:1px solid #e5e7eb">${qDiv.dataset.role}</td>
+      <td style="padding:5px 6px;border:1px solid #e5e7eb">${qDiv.querySelector('.question-text').textContent}</td>
+      <td style="padding:5px 6px;border:1px solid #e5e7eb;text-align:center;font-weight:900;font-size:14px;color:${isNA?'#64748b':isBad?'#dc2626':'#16a34a'}">${val}</td>
+      <td style="padding:5px 6px;border:1px solid #e5e7eb;font-style:italic;color:#374151;font-size:9px">${optionText}</td>
+      <td style="padding:5px 6px;border:1px solid #e5e7eb">${qDiv.querySelector('textarea').value||'—'}</td>`;
     tbody.appendChild(row);
   });
-
   if(!hasData){alert(LANG[currentLang].alertNoResponses);return;}
-
   document.getElementById('pdfWeightSummary').innerHTML=buildWeightSummaryHTML();
-
   const src=document.getElementById('pdfArea');
   src.classList.remove('hidden');
-  const opt={margin:8,filename:`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`,html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}};
+  const opt={margin:7,filename:`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`,html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}};
   html2pdf().set(opt).from(src).save().then(()=>src.classList.add('hidden'));
 });
 
-// ── EXCEL EXPORT ──────────────────────────────────────────────────
+// ── EXCEL ─────────────────────────────────────────────────────────
 document.getElementById('btnXLSX').addEventListener('click',()=>{
   const partner=document.getElementById('partnerName').value.trim();
   const pm=document.getElementById('partnerManager').value.trim();
   if(!partner||!pm){alert(LANG[currentLang].alertNoData);return;}
   const totalScore=document.getElementById('footerScore').textContent;
   if(totalScore==='—'){alert(LANG[currentLang].alertNoResponses);return;}
-
-  const summary=[['Partner',partner],['Salesperson',pm],['Score',totalScore],
-    ['Category',document.getElementById('footerType').textContent],
-    ['Subcategory',document.getElementById('displaySubcategory').textContent],
-    ['Red Flags',document.getElementById('footerRF').textContent],
-    ['Date',new Date().toLocaleString()],[''],['Action Plan:']];
+  const summary=[['Partner',partner],['Salesperson',pm],['Score',totalScore],['Category',document.getElementById('footerType').textContent],['Subcategory',document.getElementById('displaySubcategory').textContent],['Red Flags',document.getElementById('footerRF').textContent],['Date',new Date().toLocaleString()],[''],['Action Plan:']];
   document.getElementById('actionPlanList').querySelectorAll('span:last-child').forEach(a=>summary.push(['• ',a.textContent]));
-
   const rows=[['Bloque','Rol','Pregunta','Peso','Score','Opción elegida','Tipo','Comentario PM']];
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
     const sel=qDiv.querySelector('input[type="radio"]:checked');
     if(!sel) return;
     const xIsNA=sel.value==='NA';
-    const xSelLabel=qDiv.querySelector('label.radio-label.selected .text-xs.text-gray-600');
+    const xSelLabel=qDiv.querySelector('label.opt-card.selected .opt-label');
     const xOptText=xIsNA?'N/A':(xSelLabel?xSelLabel.textContent.trim():'—');
     rows.push([qDiv.dataset.block,qDiv.dataset.role,qDiv.querySelector('.question-text').textContent,qDiv.dataset.weight,sel.value,xOptText,qDiv.dataset.qtype,qDiv.querySelector('textarea').value||'']);
   });
-
-  // Weight sheet
   const totalW=Q.reduce((s,q)=>s+q.w,0);
-  const weightRows=[['Bloque','Pregunta','Peso','% del Total','Tipo']];
-  Q.forEach(q=>weightRows.push([q.b,currentLang==='es'?q.es:q.en,q.w,(q.w/totalW*100).toFixed(1)+'%',q.t]));
-
+  const weightRows=[['Bloque','Pregunta','Peso','% del Total','Tipo','Rol','N/A req. comentario']];
+  Q.forEach(q=>weightRows.push([q.b,currentLang==='es'?q.es:q.en,q.w,(q.w/totalW*100).toFixed(1)+'%',q.t,q.r,q.naRequired?'Sí':'No']));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summary),'Summary');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Responses');
@@ -1404,18 +1123,27 @@ document.getElementById('btnClear').addEventListener('click',()=>{
   document.getElementById('partnerManager').value='';
   document.getElementById('roleMode').value='all';
   document.getElementById('searchBox').value='';
-  renderForm(null);
-  applyFilters();
-  recalculate();
+  renderForm(null);applyFilters();recalculate();
 });
 
+// ── LANG ──────────────────────────────────────────────────────────
+function updateLanguage(){
+  document.getElementById('langText').textContent=currentLang.toUpperCase();
+  const L=LANG[currentLang];
+  Object.keys(L).forEach(key=>{const el=document.getElementById(key);if(el)el.textContent=L[key];});
+  const saved=loadAutosave();
+  renderForm(saved&&saved.lang===currentLang?saved:null);
+  applyFilters();recalculate();
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────
 document.getElementById('roleMode').addEventListener('change',()=>{applyFilters();recalculate();});
 document.getElementById('searchBox').addEventListener('input',applyFilters);
 document.getElementById('langToggle').addEventListener('click',()=>{currentLang=currentLang==='es'?'en':'es';updateLanguage();});
 document.getElementById('partnerName').addEventListener('input',()=>{scheduleAutosave();updateExportState();});
 document.getElementById('partnerManager').addEventListener('input',()=>{scheduleAutosave();updateExportState();});
 
-// Init — load autosave if exists
+// ── INIT ──────────────────────────────────────────────────────────
 const initSaved=loadAutosave();
 if(initSaved&&initSaved.lang) currentLang=initSaved.lang;
 document.getElementById('langText').textContent=currentLang.toUpperCase();
@@ -1426,9 +1154,7 @@ if(initSaved){
 }
 const L=LANG[currentLang];
 Object.keys(L).forEach(key=>{const el=document.getElementById(key);if(el)el.textContent=L[key];});
-renderForm(initSaved);
-applyFilters();
-recalculate();
+renderForm(initSaved);applyFilters();recalculate();
 </script>
 </body>
 </html>
