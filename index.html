@@ -20,6 +20,11 @@
     }
     .opt-card:hover{border-color:#b08fa8;background:#fdf8fc;transform:translateY(-1px);box-shadow:0 2px 8px rgba(113,75,103,.12)}
     .opt-card input[type=radio]{display:none}
+    /* Ensure unselected cards never show purple border */
+    .opt-card:not(.selected){border-color:#e5e7eb!important;background:white!important}
+    .opt-card:not(.selected):hover{border-color:#b08fa8!important;background:#fdf8fc!important}
+    .opt-card.na-card:not(.selected){border-color:#cbd5e1!important;background:#f8fafc!important;border-style:dashed!important}
+    .opt-card.na-card:not(.selected):hover{border-color:#94a3b8!important;background:#f1f5f9!important}
     .opt-num{
       width:28px;height:28px;border-radius:50%;border:2px solid #d1d5db;
       display:flex;align-items:center;justify-content:center;
@@ -94,11 +99,15 @@
       width:100%;border:1.5px solid #e5e7eb;border-radius:8px;
       padding:9px 12px;font-size:13px;resize:none;outline:none;
       transition:border-color .2s,box-shadow .2s;color:#374151;
-      font-family:inherit;
+      font-family:inherit;background:white;
     }
     .comment-field:focus{border-color:#714B67;box-shadow:0 0 0 3px rgba(113,75,103,.1)}
-    .comment-field.valid{border-color:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.1)}
-    .comment-field.invalid{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.1)}
+    .comment-field.valid{border-color:#22c55e!important;box-shadow:0 0 0 2px rgba(34,197,94,.15)!important}
+    .comment-field.invalid{border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.15)!important}
+    /* textarea inherits wrap color when required */
+    .req-score-1 .comment-field:not(.valid){border-color:#ef4444;background:#fff5f5}
+    .req-score-2 .comment-field:not(.valid){border-color:#f97316;background:#fff7ed}
+    .req-na .comment-field:not(.valid){border-color:#64748b;background:#f1f5f9}
     .comment-counter{font-size:11px;color:#9ca3af;text-align:right;margin-top:4px;font-weight:500}
     .comment-counter.ok{color:#16a34a;font-weight:700}
     .comment-counter.warn{color:#ef4444;font-weight:700}
@@ -648,7 +657,7 @@ function renderForm(savedData){
           ${optHTML}
         </div>
         <div class="${commentWrapCls}" id="cwrap_${qId}">
-          ${needsCommentNow?naRequiredNote:''}
+          ${(needsCommentNow&&savedAns==='NA')?naRequiredNote:''}
           <div class="flex items-center justify-between mb-1.5">
             <label class="text-xs font-bold text-gray-600 flex items-center gap-1.5">
               ${needsCommentNow?'<span class="comment-label-status font-bold">✱</span>':''} Comentarios
@@ -683,7 +692,8 @@ function renderForm(savedData){
         const scoreVal=e.target.value;
         const qId=qDiv.dataset.qid;
         const needsNow=isCommentRequired(qDiv,scoreVal);
-        refreshCommentWrap(qDiv,qId,needsNow,q);
+        // Pass scoreVal directly so refreshCommentWrap knows the color
+        refreshCommentWrap(qDiv,qId,needsNow,scoreVal);
         if(needsNow){const ta=qDiv.querySelector('textarea');if(ta&&ta.value)validateAndStyleComment(qDiv,qId,ta.value);}
         else{clearCommentStyle(qId);}
         // Color the q-card based on score
@@ -750,35 +760,33 @@ function getReqClass(scoreVal){
   return 'required-comment';
 }
 
-function refreshCommentWrap(qDiv,qId,needsNow,qObj){
+function refreshCommentWrap(qDiv,qId,needsNow,scoreVal){
   const wrap=document.getElementById(`cwrap_${qId}`);
   if(!wrap) return;
   const naReq=qDiv.dataset.naRequired==='true';
   const naNote=naReq?`<div class="na-required-note"><span>📝</span> Si marcas N/A, explica el contexto — este campo es obligatorio</div>`:'';
-  // Get current score value to pick the right color class
-  const sel=qDiv.querySelector('input[type="radio"]:checked');
-  const curVal=sel?sel.value:null;
-  const reqCls=getReqClass(curVal);
-  // Preserve filled/error states
-  const isFilled=wrap.classList.contains('filled');
-  const isError=wrap.classList.contains('error');
+  const reqCls=getReqClass(scoreVal);
+
   if(needsNow){
-    wrap.className='comment-wrap '+reqCls+(isFilled?' filled':isError?' error':'');
+    // Set color class + reset filled/error (fresh state on each selection change)
+    wrap.className='comment-wrap '+reqCls;
+    const labelEl=wrap.querySelector('label');
+    if(labelEl){
+      labelEl.innerHTML=`<span class="comment-label-status font-bold">✱</span> Comentarios <span class="comment-label-status text-xs font-bold">Obligatorio ✍️</span>`;
+    }
+    // Show na note ONLY when N/A is selected
+    const existingNote=wrap.querySelector('.na-required-note');
+    if(existingNote) existingNote.remove();
+    if(scoreVal==='NA'&&naReq) wrap.insertAdjacentHTML('afterbegin',naNote);
   } else {
     wrap.className='comment-wrap';
-  }
-  const labelEl=wrap.querySelector('label');
-  if(labelEl){
-    if(needsNow){
-      labelEl.innerHTML=`<span class="comment-label-status font-bold">✱</span> Comentarios <span class="comment-label-status text-xs font-bold">Obligatorio ✍️</span>`;
-    } else {
+    const labelEl=wrap.querySelector('label');
+    if(labelEl){
       labelEl.innerHTML=`Comentarios <span class="text-gray-400 text-xs font-normal">Opcional</span>`;
     }
+    const existingNote=wrap.querySelector('.na-required-note');
+    if(existingNote) existingNote.remove();
   }
-  // Prepend naNote if needed
-  const existingNote=wrap.querySelector('.na-required-note');
-  if(existingNote) existingNote.remove();
-  if(needsNow&&naReq) wrap.insertAdjacentHTML('afterbegin',naNote);
 }
 
 function validateAndStyleComment(qDiv,qId,text){
@@ -815,12 +823,14 @@ function clearCommentStyle(qId){
   const ta=document.getElementById(`comment_${qId}`);
   const wrap=document.getElementById(`cwrap_${qId}`);
   const msg=document.getElementById(`cmsg_${qId}`);
-  if(ta) ta.classList.remove('valid','invalid');
+  if(ta){ta.classList.remove('valid','invalid');}
   if(wrap){
-    wrap.classList.remove('filled','error');
-    // Reset label to Opcional
+    // Full reset — remove ALL color/state classes
+    wrap.className='comment-wrap';
     const labelEl=wrap.querySelector('label');
     if(labelEl) labelEl.innerHTML=`Comentarios <span class="text-gray-400 text-xs font-normal">Opcional</span>`;
+    const note=wrap.querySelector('.na-required-note');
+    if(note) note.remove();
   }
   if(msg){msg.textContent='';msg.classList.add('hidden');}
 }
@@ -845,18 +855,24 @@ function recalculate(){
       const weight=parseFloat(qDiv.dataset.weight);
       const sel=qDiv.querySelector('input[type="radio"]:checked');
       const shouldCount=(mode==='all')||(mode==='Recruiter'&&(role==='Recruiter'||role==='Ambos'))||(mode==='PM'&&(role==='PM'||role==='Ambos'));
-      if(!shouldCount) return;
+      // Count visible for progress display regardless of role filter
       bVisible++;totalVisible++;
-      if(sel){
-        const val=sel.value;
-        if(val==='NA'){answeredCount++;bAnswered++;return;}
-        answeredCount++;bAnswered++;answered=true;
-        const num=parseInt(val);
-        const ws=(num/5)*weight;
-        totalScore+=ws;totalWeight+=weight;
-        bTotal+=ws;bWeight+=weight;
-        if(num<=2){redFlags++;bRF++;qDiv.classList.add('red-flag-row');qDiv.classList.remove('answered-ok');}
-        else{qDiv.classList.remove('red-flag-row');}
+      if(sel && (sel.value==='NA' || true)) {
+        // Track answered for progress bar (all visible answered questions)
+        if(shouldCount){
+          const val=sel.value;
+          if(val==='NA'){answeredCount++;bAnswered++;return;}
+          answeredCount++;bAnswered++;answered=true;
+          const num=parseInt(val);
+          const ws=(num/5)*weight;
+          totalScore+=ws;totalWeight+=weight;
+          bTotal+=ws;bWeight+=weight;
+          if(num<=2){redFlags++;bRF++;qDiv.classList.add('red-flag-row');qDiv.classList.remove('answered-ok');}
+          else{qDiv.classList.remove('red-flag-row');}
+        } else {
+          // Not in role filter but still answered — count for progress
+          if(sel.value!=='') {answeredCount++;bAnswered++;}
+        }
       }
     });
 
@@ -868,7 +884,18 @@ function recalculate(){
     const bScore=bWeight>0?(bTotal/bWeight)*5:0;
     if(bWeight>0) blockScores[block]=bScore;
     const scorePill=card.querySelector('[data-block-score]');
-    if(scorePill) scorePill.textContent=bWeight>0?bScore.toFixed(1)+'':'—';
+    if(scorePill){
+      if(bWeight>0){
+        const pillColor=bScore>=4?'#86efac':bScore>=3?'#fde68a':bScore>=2?'#fed7aa':'#fecaca';
+        scorePill.textContent=bScore.toFixed(1);
+        scorePill.style.background=pillColor;
+        scorePill.style.color=bScore>=4?'#14532d':bScore>=3?'#713f12':bScore>=2?'#7c2d12':'#7f1d1d';
+      } else {
+        scorePill.textContent='—';
+        scorePill.style.background='';
+        scorePill.style.color='';
+      }
+    }
     const fill=card.querySelector('[data-block-fill]');
     if(fill) fill.style.width=(bWeight>0?(bScore/5*100).toFixed(0):0)+'%';
   });
@@ -985,8 +1012,14 @@ function updateExportState(){
   const partner=document.getElementById('partnerName').value.trim();
   const pm=document.getElementById('partnerManager').value.trim();
   const issues=getCommentIssues();
+  const exportMode=document.getElementById('roleMode').value;
   let unanswered=0;
-  document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{if(!qDiv.querySelector('input[type="radio"]:checked'))unanswered++;});
+  document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
+    const role=qDiv.dataset.role;
+    const shouldCount=(exportMode==='all')||(exportMode==='Recruiter'&&(role==='Recruiter'||role==='Ambos'))||(exportMode==='PM'&&(role==='PM'||role==='Ambos'));
+    if(!shouldCount) return;
+    if(!qDiv.querySelector('input[type="radio"]:checked')) unanswered++;
+  });
   const noScore=score==='—',noMeta=!partner||!pm;
   const isBlocked=issues.pending+issues.invalid+unanswered+(noMeta?1:0)+(noScore?1:0)>0;
   const pdfBtn=document.getElementById('btnPDF'),xlsxBtn=document.getElementById('btnXLSX');
