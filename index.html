@@ -103,7 +103,7 @@ body{padding-bottom:140px;font-family:'Segoe UI',system-ui,sans-serif;background
           <span id="badgeSubcat" class="font-semibold text-xs">—</span>
         </div>
         <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-3 py-1.5 border border-white/10">
-          <span class="text-xs opacity-60">Score:</span>
+          <span class="text-xs opacity-60" id="labelScore"></span>
           <span id="badgeScore" class="font-bold text-base">—</span>
           <span class="text-xs opacity-40">/5</span>
         </div>
@@ -315,7 +315,9 @@ const LANG = {
     labelSubcat:              'Subcat:',
     flagsLabel:               'flags',
     labelPartnerName:         'Nombre del Partner *',
+    partnerNamePlaceholder:   'ej. ERP Mexico',
     labelPartnerManager:      'Salesperson *',
+    partnerManagerPlaceholder:'ej. Alnu',
     labelRoleMode:            'Filtro por Rol',
     labelSearch:              'Búsqueda rápida',
     searchPlaceholder:        'Filtrar preguntas...',
@@ -330,6 +332,7 @@ const LANG = {
     blockScoresTitle:         'Score por bloque',
     actionPlanTitle:          'Plan de Acción',
     footerLabelTotal:         'Score:',
+    labelScore:               'Score:',
     footerLabelType:          'Tipo:',
     footerRFLabel:            'flags',
     btnClearText:             'Limpiar',
@@ -343,6 +346,7 @@ const LANG = {
     pdfLabelCategory:         'Categoría',
     pdfLabelSubcat:           'Subcategoría',
     pdfLabelRF:               'Red Flags',
+    pdfLabelScore:            'Total score',
     pdfActionTitle:           'Plan de Acción',
     pdfDetailedTitle:         'Respuestas Detalladas',
     pdfWeightTitle:           'Distribución de Pesos — Referencia para PM y Team Leader',
@@ -370,6 +374,8 @@ const LANG = {
     typeCore:                 'Core',
     typeMaturity:             'Madurez',
     typeAspiration:           'Aspiración',
+    roleRecruiter:            'Recruiter',
+    rolePM:                   'PM',
     roleBoth:                 'Ambos',
     categories:               { Strategic:'Strategic', Growth:'Growth', Active:'Active', LowFit:'Low Fit' },
     subcats: {
@@ -408,7 +414,9 @@ const LANG = {
     labelSubcat:              'Subcat:',
     flagsLabel:               'flags',
     labelPartnerName:         'Partner Name *',
+    partnerNamePlaceholder:   'e.g. ERP Mexico',
     labelPartnerManager:      'Salesperson *',
+    partnerManagerPlaceholder:'e.g. Alnu',
     labelRoleMode:            'Role Filter',
     labelSearch:              'Quick search',
     searchPlaceholder:        'Filter questions...',
@@ -463,6 +471,8 @@ const LANG = {
     typeCore:                 'Core',
     typeMaturity:             'Maturity',
     typeAspiration:           'Aspiration',
+    roleRecruiter:            'Recruiter',
+    rolePM:                   'PM',
     roleBoth:                 'Both',
     categories:               { Strategic:'Strategic', Growth:'Growth', Active:'Active', LowFit:'Low Fit' },
     subcats: {
@@ -501,7 +511,9 @@ const LANG = {
     labelSubcat:              'Sous-cat. :',
     flagsLabel:               'alertes',
     labelPartnerName:         'Nom du Partenaire *',
+    partnerNamePlaceholder:   'ex. ERP Mexico',
     labelPartnerManager:      'Responsable commercial *',
+    partnerManagerPlaceholder:'ex. Alnu',
     labelRoleMode:            'Filtre par rôle',
     labelSearch:              'Recherche rapide',
     searchPlaceholder:        'Filtrer les questions...',
@@ -516,6 +528,7 @@ const LANG = {
     blockScoresTitle:         'Score par bloc',
     actionPlanTitle:          'Plan d\'action',
     footerLabelTotal:         'Score :',
+    labelScore:               'Score :',
     footerLabelType:          'Type :',
     footerRFLabel:            'alertes',
     btnClearText:             'Effacer',
@@ -529,6 +542,7 @@ const LANG = {
     pdfLabelCategory:         'Catégorie',
     pdfLabelSubcat:           'Sous-catégorie',
     pdfLabelRF:               'Alertes critiques',
+    pdfLabelScore:            'Score total',
     pdfActionTitle:           'Plan d\'action',
     pdfDetailedTitle:         'Réponses détaillées',
     pdfWeightTitle:           'Répartition des pondérations — Référence PM et Team Leader',
@@ -537,7 +551,7 @@ const LANG = {
     weightTableHeaders:       ['Question','Poids','% Total','Type','Rôle','N/A nécessite commentaire'],
     weightYes:                'Oui',
     weightNo:                 'Non',
-    weightHowTo:              '"Socle" = échelle 1–5. "Maturité/Ambition" = N/A + 1–5. Pondération plus élevée = plus d\'impact sur le score final.',
+    weightHowTo:              '"Core" = échelle 1–5. "Maturité/Aspiration" = N/A + 1–5. Pondération plus élevée = plus d\'impact sur le score final.',
     commentsPlaceholder:      'Expliquez le contexte (min. 15 caractères)...',
     commentTooShort:          'Trop court — écrivez au moins 15 caractères de contexte réel',
     commentInvalid:           'Ressemble à du texte générique — écrivez le contexte réel',
@@ -546,16 +560,18 @@ const LANG = {
     commentOptional:          'Facultatif',
     commentLabel:             'Commentaires',
     naRequiredNote:           '📝 Si vous sélectionnez N/A, expliquez le contexte — ce champ est obligatoire',
-    blockerTitle:             'Export impossible pour l\'instant',
+    blockerTitle:             'Impossible d\'exporter pour l\'instant',
     blockerMissingMeta:       'Nom du partenaire ou responsable commercial manquant',
     blockerNoScore:           'Répondez à au moins une question',
     blockerUnanswered:        n => `${n} question(s) sans réponse`,
     blockerPending:           n => `${n} commentaire(s) incomplet(s) — min. 15 caractères`,
     blockerFiller:            n => `${n} commentaire(s) de remplissage`,
     progressLabel:            (a,t) => `${a} / ${t} répondues`,
-    typeCore:                 'Socle',
+    typeCore:                 'Core',
     typeMaturity:             'Maturité',
-    typeAspiration:           'Ambition',
+    typeAspiration:           'Aspiration',
+    roleRecruiter:            'Recruteur',
+    rolePM:                   'PM',
     roleBoth:                 'Les deux',
     categories:               { Strategic:'Stratégique', Growth:'Croissance', Active:'Actif', LowFit:'Inadapté' },
     subcats: {
@@ -567,7 +583,7 @@ const LANG = {
     actionPlans: {
       'Strategic-Flagship':    ['Inviter au programme élite partenaires','Co-créer des études de cas et témoignages','Accès anticipé aux nouvelles fonctionnalités','Inviter comme conférenciers aux événements Odoo'],
       'Strategic-Established': ['Relation étroite avec PM dédié','Prioriser la co-vente active','Webinaires avancés conjoints','Accompagner l\'expansion sectorielle'],
-      'Strategic-Transforming':['Plan 30-60-90 avec PM dédié','Renforcement des bonnes pratiques','Mise en relation avec des partenaires performants','Revue trimestrielle des KPIs'],
+      'Strategic-Transforming':['Plan 30-60-90 avec PM dédié','Partage des meilleures pratiques','Mise en relation avec des partenaires performants','Revue trimestrielle des KPIs'],
       'Growth-Vertical':       ['Contenus marketing par secteur','Référencement sur Odoo.com par industrie','Mise en relation avec des clients du secteur','Inviter au Partner Day'],
       'Growth-Expanding':      ['Success Packs à tarif réduit','Accompagnement aux certifications','Suivi mensuel du pipeline','Sessions de formation pour l\'équipe'],
       'Growth-Broad':          ['Définir un axe stratégique','Identifier le secteur le plus porteur','Plan de spécialisation sur 6 mois','Revue du pipeline'],
@@ -605,7 +621,7 @@ const Q=[
     es:'¿Qué rol juega Odoo en su negocio actualmente?',
     en:'What role does Odoo currently play in their business?',
     fr:'Quel rôle joue Odoo dans leur activité aujourd\'hui ?',
-    o:[['Solo explorando, sin compromiso claro','Just exploring, no clear commitment','Exploration seulement, sans engagement clair'],
+    o:[       ['Solo explorando, sin compromiso claro','Just exploring, no clear commitment','Ils explorent seulement, sans engagement clair'],
        ['Un producto más entre varios que ofrecen','One of several products they offer','Un produit parmi d\'autres dans leur offre'],
        ['Una línea de negocio importante pero no la principal','An important but not primary business line','Une ligne d\'activité importante mais pas principale'],
        ['Pilar clave de su oferta de valor','Key pillar of their value offer','Pilier central de leur offre de valeur'],
@@ -616,7 +632,7 @@ const Q=[
     en:'Who leads the Odoo practice internally?',
     fr:'Qui pilote la pratique Odoo en interne ?',
     o:[['Solo el fundador, sin equipo dedicado','Only the founder, no dedicated team','Uniquement le fondateur, sans équipe dédiée'],
-       ['Fundador + 1 persona part-time','Founder + 1 part-time person','Fondateur + 1 personne à temps partiel'],
+       ['Fundador + 1 persona part-time','Founder + 1 part-time person','Fondateur + 1 collaborateur à temps partiel'],
        ['1-2 personas dedicadas exclusivamente','1-2 exclusively dedicated people','1-2 personnes exclusivement dédiées'],
        ['Equipo de 3-4 personas','Team of 3-4 people','Équipe de 3-4 personnes'],
        ['Equipo de 5 o más personas dedicadas','Team of 5+ dedicated people','Équipe de 5 personnes dédiées ou plus']],
@@ -771,7 +787,7 @@ const Q=[
     es:'¿Tienen un ICP (Ideal Customer Profile) definido para sus proyectos Odoo?',
     en:'Do they have a defined ICP (Ideal Customer Profile) for their Odoo projects?',
     fr:'Ont-ils un ICP (profil client idéal) défini pour leurs projets Odoo ?',
-    o:[['Venden a cualquiera que llegue sin criterio','Sell to anyone without criteria','Vendent à n\'importe qui sans critère'],
+    o:[       ['Venden a cualquiera que llegue sin criterio','Sell to anyone without criteria','Vendent à tout venant, sans critère de sélection'],
        ['Tienen una idea general pero sin documentar','Have a general idea but nothing documented','Ont une idée générale mais rien de documenté'],
        ['Una vertical parcialmente definida','A partially defined vertical','Un secteur partiellement défini'],
        ['ICP documentado y usado activamente en ventas','Documented ICP actively used in sales','ICP documenté et utilisé activement en vente'],
@@ -781,7 +797,7 @@ const Q=[
     es:'¿Cómo generan sus oportunidades comerciales de Odoo?',
     en:'How do they generate their Odoo commercial opportunities?',
     fr:'Comment génèrent-ils leurs opportunités commerciales Odoo ?',
-    o:[['No tienen proceso, esperan que lleguen solos','No process, wait for opportunities to come to them','Pas de processus, attendent que les opportunités viennent d\'elles-mêmes'],
+    o:[       ['No tienen proceso, esperan que lleguen solos','No process, wait for opportunities to come to them','Aucun processus, les opportunités arrivent par hasard'],
        ['Solo referidos informales de clientes actuales','Only informal referrals from current clients','Uniquement des recommandations informelles de clients existants'],
        ['Marketing básico: redes sociales o eventos esporádicos','Basic marketing: social media or sporadic events','Marketing de base : réseaux sociaux ou événements ponctuels'],
        ['Equipo de marketing o proceso comercial estructurado','Marketing team or structured commercial process','Équipe marketing ou processus commercial structuré'],
@@ -1069,6 +1085,7 @@ function qText(q)       { return q[currentLang] || q.es; }
 function optText(arr)   { return currentLang==='fr'?arr[2]:currentLang==='en'?arr[1]:arr[0]; }
 function isNAOpt(arr)   { return arr[0].trim().toUpperCase().startsWith('N/A'); }
 function getReqClass(v) { if(!v)return ''; if(v==='NA')return 'req-na'; const n=parseInt(v); if(n===1)return 'req-score-1'; if(n===2)return 'req-score-2'; return ''; }
+function roleLabel(r)   { return r==='Recruiter'?L('roleRecruiter'):r==='PM'?L('rolePM'):L('roleBoth'); }
 
 function isCommentRequired(qDiv, v) {
   if(v==='NA') return qDiv.dataset.naRequired==='true';
@@ -1168,7 +1185,7 @@ function renderForm(savedData) {
       qDiv.dataset.qid=qId; qDiv.dataset.qtype=q.t; qDiv.dataset.naRequired=naReq?'true':'false';
 
       const roleCls=q.r==='Recruiter'?'role-pill-recruiter':q.r==='PM'?'role-pill-pm':'role-pill-ambos';
-      const roleLabel=q.r==='Ambos'?L('roleBoth'):q.r;
+      const rLabel=roleLabel(q.r);
       const typeCls=`type-${q.t}`;
       const typeLabel=q.t==='core'?L('typeCore'):q.t==='maturity'?L('typeMaturity'):L('typeAspiration');
 
@@ -1211,7 +1228,7 @@ function renderForm(savedData) {
           <div class="flex-1">
             <div class="flex flex-wrap items-center gap-2 mb-2">
               <span class="type-badge ${typeCls}">${typeLabel}</span>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${roleCls}">${roleLabel}</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${roleCls}">${rLabel}</span>
               <span class="text-xs text-gray-400 font-medium">${L('weightLabel')}: ${q.w}</span>
             </div>
             <p class="text-sm font-semibold text-gray-800 question-text leading-snug">${question}</p>
@@ -1461,7 +1478,9 @@ function updateStaticUI(){
   set('labelSubcat',       L('labelSubcat'));
   set('flagsLabel',        L('flagsLabel'));
   set('labelPartnerName',  L('labelPartnerName'));
+  setAttr('partnerName','placeholder', L('partnerNamePlaceholder'));
   set('labelPartnerManager',L('labelPartnerManager'));
+  setAttr('partnerManager','placeholder', L('partnerManagerPlaceholder'));
   set('labelRoleMode',     L('labelRoleMode'));
   set('labelSearch',       L('labelSearch'));
   setAttr('searchBox','placeholder',L('searchPlaceholder'));
@@ -1485,7 +1504,8 @@ function updateStaticUI(){
   set('pdfLabelSalesperson',L('pdfLabelSalesperson'));
   set('pdfLabelCategory',  L('pdfLabelCategory'));
   set('pdfLabelSubcat',    L('pdfLabelSubcat'));
-  set('pdfLabelRF',        L('pdfLabelRF'));
+  set('labelScore',        L('labelScore'));
+  set('pdfLabelScore',     L('pdfLabelScore'));
   set('pdfActionTitle',    L('pdfActionTitle'));
   set('pdfDetailedTitle',  L('pdfDetailedTitle'));
   set('pdfWeightTitle',    L('pdfWeightTitle'));
@@ -1500,11 +1520,10 @@ function updateExportState(){
   const pm=document.getElementById('partnerManager').value.trim();
   const issues=getCommentIssues();
   const mode=document.getElementById('roleMode').value;
+  // Bug fix #3: count ALL visible questions regardless of role filter for unanswered check
   let unanswered=0;
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
-    const role=qDiv.dataset.role;
-    const ok=(mode==='all')||(mode==='Recruiter'&&(role==='Recruiter'||role==='Ambos'))||(mode==='PM'&&(role==='PM'||role==='Ambos'));
-    if(ok&&!qDiv.querySelector('input[type="radio"]:checked')) unanswered++;
+    if(!qDiv.querySelector('input[type="radio"]:checked')) unanswered++;
   });
   const noScore=score==='—',noMeta=!partner||!pm;
   const blocked=issues.pending+issues.invalid+unanswered+(noMeta?1:0)+(noScore?1:0)>0;
@@ -1554,7 +1573,7 @@ function buildWeightSummaryHTML(){
         <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;font-weight:bold">${q.w}</td>
         <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center">${qPct}%</td>
         <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;color:${tc};font-size:8px">${tl}</td>
-        <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;font-size:8px">${q.r}</td>
+        <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center;font-size:8px">${roleLabel(q.r)}</td>
         <td style="padding:3px 5px;border:1px solid #e9e3ee;text-align:center">${q.naRequired?L('weightYes'):L('weightNo')}</td></tr>`;
     });
     html+=`</tbody></table></div>`;
@@ -1592,7 +1611,7 @@ document.getElementById('btnPDF').addEventListener('click',()=>{
     const optionText=isNAVal?'N/A':(selLabel?selLabel.textContent.trim():'—');
     const row=document.createElement('tr'); row.style.background=isBad?'#fff5f5':isNAVal?'#f8fafc':'white';
     row.innerHTML=`<td style="padding:5px 6px;border:1px solid #e5e7eb">${bLabel(qDiv.dataset.block)}</td>
-      <td style="padding:5px 6px;border:1px solid #e5e7eb">${qDiv.dataset.role}</td>
+      <td style="padding:5px 6px;border:1px solid #e5e7eb">${roleLabel(qDiv.dataset.role)}</td>
       <td style="padding:5px 6px;border:1px solid #e5e7eb">${qDiv.querySelector('.question-text').textContent}</td>
       <td style="padding:5px 6px;border:1px solid #e5e7eb;text-align:center;font-weight:900;font-size:14px;color:${isNAVal?'#64748b':isBad?'#dc2626':'#16a34a'}">${v}</td>
       <td style="padding:5px 6px;border:1px solid #e5e7eb;font-style:italic;color:#374151;font-size:9px">${optionText}</td>
@@ -1624,7 +1643,7 @@ document.getElementById('btnXLSX').addEventListener('click',()=>{
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
     const sel=qDiv.querySelector('input[type="radio"]:checked'); if(!sel) return;
     const isNAVal=sel.value==='NA',selLabel=qDiv.querySelector('label.opt-card.selected .opt-label');
-    rows.push([bLabel(qDiv.dataset.block),qDiv.dataset.role,qDiv.querySelector('.question-text').textContent,qDiv.dataset.weight,sel.value,isNAVal?'N/A':(selLabel?selLabel.textContent.trim():'—'),qDiv.querySelector('textarea').value||'']);
+    rows.push([bLabel(qDiv.dataset.block), roleLabel(qDiv.dataset.role), qDiv.querySelector('.question-text').textContent, sel.value, isNAVal?'N/A':(selLabel?selLabel.textContent.trim():'—'), qDiv.querySelector('textarea').value||'']);
   });
   const totalW=Q.reduce((s,q)=>s+q.w,0),wh=L('weightTableHeaders');
   const weightRows=[wh];
@@ -1654,6 +1673,7 @@ document.getElementById('btnClear').addEventListener('click',()=>{
 document.getElementById('langToggle').addEventListener('click',()=>{
   currentLang=LANGS[(LANGS.indexOf(currentLang)+1)%LANGS.length];
   const saved=loadAutosave();
+  document.getElementById('searchBox').value=''; // clear search on lang change
   updateStaticUI();
   renderForm(saved?{answers:saved.answers||{},comments:saved.comments||{}}:null);
   applyFilters(); recalculate();
@@ -1666,7 +1686,6 @@ document.getElementById('partnerName').addEventListener('input',()=>{scheduleAut
 document.getElementById('partnerManager').addEventListener('input',()=>{scheduleAutosave();updateExportState();});
 
 // ── INIT ──────────────────────────────────────────────────────────
-
 const initSaved=loadAutosave();
 if(initSaved&&initSaved.lang&&LANGS.includes(initSaved.lang)) currentLang=initSaved.lang;
 if(initSaved){
