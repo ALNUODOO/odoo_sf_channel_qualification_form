@@ -240,6 +240,7 @@ body{padding-bottom:140px;font-family:'Segoe UI',system-ui,sans-serif;background
       </div>
     </div>
     <p id="footerBlockMsg" class="text-center text-xs mt-1.5 text-amber-600 font-semibold hidden"></p>
+    <div id="footerBlockDetail" class="hidden mt-2 max-h-40 overflow-y-auto bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800"></div>
   </div>
 </footer>
 
@@ -1055,7 +1056,11 @@ function validateComment(text) {
 function getCommentIssues() {
   let pending=0,invalid=0;
   const pendingList=[],invalidList=[];
-  document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
+  const mode=document.getElementById('roleMode').value;
+  document.querySelectorAll('[data-qid]').forEach(qDiv=>{
+    const role=qDiv.dataset.role;
+    const inRoleScope=(mode==='all')||(mode==='Recruiter'&&(role==='Recruiter'||role==='Ambos'))||(mode==='PM'&&(role==='PM'||role==='Ambos'));
+    if(!inRoleScope) return;
     const sel=qDiv.querySelector('input[type="radio"]:checked');
     if(!sel||!isCommentRequired(qDiv,sel.value)) return;
     const s=validateComment((qDiv.querySelector('textarea')||{value:''}).value);
@@ -1474,7 +1479,9 @@ function updateExportState(){
   document.getElementById('btnXLSX').classList.toggle('btn-locked',blocked);
       document.getElementById('exportBlockerBanner').classList.toggle('hidden',!blocked);
   document.getElementById('footerBlockMsg').classList.toggle('hidden',!blocked);
+  document.getElementById('footerBlockDetail').classList.toggle('hidden',!blocked);
   const detailEl=document.getElementById('blockerDetail');
+  const footerDetailEl=document.getElementById('footerBlockDetail');
   if(blocked){
     const parts=[];
     if(noMeta) parts.push(L('blockerMissingMeta'));
@@ -1485,60 +1492,60 @@ function updateExportState(){
     const summaryMsg=parts.join(' · ');
     document.getElementById('footerBlockMsg').textContent=`⚠️ ${summaryMsg}`;
 
-    // Build detailed clickable list of exact pending questions and comment issues
-    detailEl.innerHTML='';
-    const summaryP=document.createElement('p');
-    summaryP.textContent=summaryMsg;
-    detailEl.appendChild(summaryP);
-
-    function appendJumpList(titleKey, entries){
-      if(entries.length===0) return;
-      const t=document.createElement('p');
-      t.className='font-bold mt-2 mb-1';
-      t.textContent=L(titleKey);
-      detailEl.appendChild(t);
-      const ul=document.createElement('ul');
-      ul.className='list-none space-y-1';
-      entries.forEach(e=>{
-        const li=document.createElement('li');
-        const btn=document.createElement('button');
-        btn.type='button';
-        btn.className='text-amber-800 hover:text-amber-950 underline text-left';
-        btn.dataset.jumpQid=e.qid;
-        btn.textContent=`#${e.num} — ${e.text}`; // textContent avoids HTML injection from question text
-        li.appendChild(btn);
-        ul.appendChild(li);
+    // Build the same detailed clickable list in both the top banner and the footer panel
+    function buildJumpListsInto(container){
+      container.innerHTML='';
+      function appendJumpList(titleKey, entries){
+        if(entries.length===0) return;
+        const t=document.createElement('p');
+        t.className='font-bold mt-2 mb-1';
+        t.textContent=L(titleKey);
+        container.appendChild(t);
+        const ul=document.createElement('ul');
+        ul.className='list-none space-y-1';
+        entries.forEach(e=>{
+          const li=document.createElement('li');
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.className='text-amber-800 hover:text-amber-950 underline text-left';
+          btn.dataset.jumpQid=e.qid;
+          btn.textContent=`#${e.num} — ${e.text}`;
+          li.appendChild(btn);
+          ul.appendChild(li);
+        });
+        container.appendChild(ul);
+      }
+      appendJumpList('blockerUnansweredList', pendingQuestions);
+      appendJumpList('blockerPendingList', issues.pendingList);
+      appendJumpList('blockerFillerList', issues.invalidList);
+      container.querySelectorAll('[data-jump-qid]').forEach(btn=>{
+        btn.addEventListener('click',()=>jumpToQuestion(btn.dataset.jumpQid));
       });
-      detailEl.appendChild(ul);
     }
-    appendJumpList('blockerUnansweredList', pendingQuestions);
-    appendJumpList('blockerPendingList', issues.pendingList);
-    appendJumpList('blockerFillerList', issues.invalidList);
-
-    detailEl.querySelectorAll('[data-jump-qid]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        let target=document.querySelector(`[data-qid="${btn.dataset.jumpQid}"]`);
-        if(!target) return;
-        // If the question is hidden by the active search filter, clear the search so it becomes visible
-        if(target.classList.contains('hidden')){
-          const sb=document.getElementById('searchBox');
-          if(sb.value){ sb.value=''; applyFilters(); recalculate(); }
-          target=document.querySelector(`[data-qid="${btn.dataset.jumpQid}"]`);
-        }
-        if(!target || target.classList.contains('hidden')) return; // still hidden (e.g. role filter) — nothing more we can safely do
-        const body=target.closest('.block-body');
-        if(body && body.style.maxHeight==='0px'){
-          body.style.maxHeight=(body.scrollHeight+200)+'px';
-          const icon=body.previousElementSibling && body.previousElementSibling.querySelector('.toggle-icon');
-          if(icon) icon.textContent='▲';
-        }
-        target.scrollIntoView({behavior:'smooth',block:'center'});
-        target.style.transition='box-shadow .3s';
-        target.style.boxShadow='0 0 0 3px rgba(239,68,68,.5)';
-        setTimeout(()=>{target.style.boxShadow='';},1600);
-      });
-    });
+    buildJumpListsInto(detailEl);
+    buildJumpListsInto(footerDetailEl);
   }
+}
+
+function jumpToQuestion(qid){
+  let target=document.querySelector(`[data-qid="${qid}"]`);
+  if(!target) return;
+  if(target.classList.contains('hidden')){
+    const sb=document.getElementById('searchBox');
+    if(sb.value){ sb.value=''; applyFilters(); recalculate(); }
+    target=document.querySelector(`[data-qid="${qid}"]`);
+  }
+  if(!target || target.classList.contains('hidden')) return;
+  const body=target.closest('.block-body');
+  if(body && body.style.maxHeight==='0px'){
+    body.style.maxHeight=(body.scrollHeight+200)+'px';
+    const icon=body.previousElementSibling && body.previousElementSibling.querySelector('.toggle-icon');
+    if(icon) icon.textContent='▲';
+  }
+  target.scrollIntoView({behavior:'smooth',block:'center'});
+  target.style.transition='box-shadow .3s';
+  target.style.boxShadow='0 0 0 3px rgba(239,68,68,.5)';
+  setTimeout(()=>{target.style.boxShadow='';},1600);
 }
 
 // ── WEIGHT SUMMARY FOR PDF ────────────────────────────────────────
