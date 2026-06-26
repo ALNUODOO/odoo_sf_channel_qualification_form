@@ -8,7 +8,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-@media print{.no-print{display:none!important}}
+@media print{
+  /* Layer 3: if print is somehow triggered outside the PDF button, render a blank/blocked page */
+  body *{ display:none !important; }
+  body::before{
+    content:"⚠ La impresión directa está deshabilitada. Usa el botón PDF dentro de la herramienta para generar el documento oficial.";
+    display:block !important;
+    font-family:Arial,sans-serif;
+    font-size:16px;
+    padding:60px;
+    text-align:center;
+    color:#374151;
+  }
+}
 body{padding-bottom:140px;font-family:'Segoe UI',system-ui,sans-serif;background:#f4f0f3}
 .opt-card{display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 14px;border-radius:10px;border:2px solid #e5e7eb;transition:all .18s ease;user-select:none;background:white;position:relative;width:100%}
 .opt-card:hover{border-color:#b08fa8;background:#fdf8fc;transform:translateY(-1px);box-shadow:0 2px 8px rgba(113,75,103,.12)}
@@ -181,13 +193,9 @@ body{padding-bottom:140px;font-family:'Segoe UI',system-ui,sans-serif;background
             </div>
           </div>
         </div>
-        <div class="md:col-span-2">
+        <div class="md:col-span-3">
           <p class="text-xs opacity-60 uppercase tracking-wider mb-3" id="blockScoresTitle"></p>
           <div id="blockScoresList" class="space-y-1.5 text-xs"></div>
-        </div>
-        <div>
-          <p class="text-xs opacity-60 uppercase tracking-wider mb-2" id="actionPlanTitle"></p>
-          <div id="actionPlanList" class="space-y-1.5"></div>
         </div>
       </div>
     </div>
@@ -202,6 +210,8 @@ body{padding-bottom:140px;font-family:'Segoe UI',system-ui,sans-serif;background
       </div>
     </div>
   </div>
+
+  <div id="printBlockToast" class="hidden fixed top-4 right-4 z-50 bg-red-600 text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-semibold max-w-sm no-print"></div>
 
   <section id="formRoot" class="space-y-0"></section>
 </main>
@@ -270,10 +280,6 @@ body{padding-bottom:140px;font-family:'Segoe UI',system-ui,sans-serif;background
       <p style="font-size:16px;font-weight:900;color:#dc2626;margin:0" id="pdfRF"></p>
     </div>
   </div>
-  <div style="background:#f5f0f4;padding:12px;border-radius:8px;border:1px solid #d4b8cc;margin-bottom:12px">
-    <h3 style="color:#714B67;font-weight:bold;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px" id="pdfActionTitle"></h3>
-    <div id="pdfActionPlan" style="font-size:11px;line-height:1.7"></div>
-  </div>
   <h3 style="font-weight:bold;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#714B67;margin-bottom:8px" id="pdfDetailedTitle"></h3>
   <table style="width:100%;font-size:9px;border-collapse:collapse;margin-bottom:16px">
     <thead><tr style="background:#714B67;color:white" id="pdfTableHead"></tr></thead>
@@ -330,7 +336,6 @@ const LANG = {
     mandatoryCommentsText:    'Score ≤ 2 y N/A en preguntas clave. Mínimo 15 caracteres de contexto real.',
     resultsTitle:             'Clasificación',
     blockScoresTitle:         'Score por bloque',
-    actionPlanTitle:          'Plan de Acción',
     footerLabelTotal:         'Score:',
     labelScore:               'Score:',
     footerLabelType:          'Tipo:',
@@ -338,6 +343,7 @@ const LANG = {
     btnClearText:             'Limpiar',
     weightLabel:              'Peso',
     confirmClear:             '¿Seguro que quieres borrar todo?',
+    printBlockedMsg:          'La impresión directa está deshabilitada. Usa el botón "PDF" para generar el documento oficial.',
     alertNoData:              'Completa el nombre del Partner y Salesperson primero.',
     alertNoResponses:         'Responde al menos una pregunta primero.',
     pdfGenerated:             'Generado:',
@@ -347,7 +353,6 @@ const LANG = {
     pdfLabelSubcat:           'Subcategoría',
     pdfLabelRF:               'Red Flags',
     pdfLabelScore:            'Total score',
-    pdfActionTitle:           'Plan de Acción',
     pdfDetailedTitle:         'Respuestas Detalladas',
     pdfWeightTitle:           'Distribución de Pesos — Referencia para PM y Team Leader',
     pdfWeightSubtitle:        'Un peso mayor significa que esa área impacta más en la clasificación final del partner.',
@@ -368,6 +373,9 @@ const LANG = {
     blockerMissingMeta:       'Falta nombre del partner o salesperson',
     blockerNoScore:           'Responde al menos una pregunta',
     blockerUnanswered:        n => `${n} pregunta(s) sin responder`,
+    blockerUnansweredList:    'Preguntas sin responder:',
+    blockerPendingList:       'Comentarios incompletos (mín. 15 caracteres):',
+    blockerFillerList:        'Comentarios con texto de relleno:',
     blockerPending:           n => `${n} comentario(s) incompleto(s) — mín. 15 caracteres`,
     blockerFiller:            n => `${n} comentario(s) con texto de relleno`,
     progressLabel:            (a,t) => `${a} / ${t} respondidas`,
@@ -383,27 +391,7 @@ const LANG = {
       Vertical:'Enfoque Vertical', Expanding:'En Expansión', Broad:'Base Amplia',
       Emerging:'Emergente', AtRisk:'En Riesgo', Transactional:'Transaccional',
       EndUser:'End-User', Community:'Enfoque Community', Inactive:'Inactivo', Dormant:'Dormido'
-    },
-    actionPlans: {
-      'Strategic-Flagship':    ['Invitar al programa elite de partners','Co-crear casos de éxito y testimoniales','Acceso anticipado a nuevas funciones','Invitar como ponentes en eventos Odoo'],
-      'Strategic-Established': ['Relación cercana con PM dedicado','Priorizar co-venta activa','Webinars avanzados conjuntos','Apoyo en expansión vertical'],
-      'Strategic-Transforming':['Plan 30-60-90 con PM dedicado','Habilitación en mejores prácticas','Conectar con partners exitosos','Revisión trimestral de KPIs'],
-      'Growth-Vertical':       ['Materiales de marketing por vertical','Listings en Odoo.com por industria','Conexiones con clientes de la vertical','Invitar a Partner Day'],
-      'Growth-Expanding':      ['Success Packs con descuento','Apoyo en certificaciones','Seguimiento mensual del pipeline','Habilitación del equipo'],
-      'Growth-Broad':          ['Definir enfoque estratégico','Análisis de vertical prometedora','Plan de especialización a 6 meses','Revisión de pipeline'],
-      'Active-Emerging':       ['Onboarding intensivo','Asignar buddy partner experimentado','Hitos a 90 días','Check-in semanal las primeras 4 semanas'],
-      'Active-Transactional':  ['Evaluar sostenibilidad del modelo','Formalizar procesos comerciales','Capacitación en metodologías','Recalificación en 60 días'],
-      'Active-AtRisk':         ['Intervención urgente del PM','Health-check completo','Plan de recuperación 30-60 días','Reclasificar si no hay mejora'],
-      'LowFit-EndUser':        ['Cerrar como cliente directo','Derivar a Direct Sales','Redirigir a Odoo Success','Eliminar del roster activo'],
-      'LowFit-Community':      ['Emails educativos sobre Enterprise','Webinar comparativo','2 oportunidades de reengagement','Archivar si no responden'],
-      'LowFit-Inactive':       ['Última campaña de reactivación','Encuesta: "¿Qué podríamos mejorar?"','Marcar como Dormido','Nurturing pasivo'],
-      'LowFit-Dormant':        ['Email trimestral con novedades','Newsletters generales','Monitoreo pasivo','Evaluar reactivación futura']
-    },
-    rfCritical: n => `⚠️ CRÍTICO: ${n} red flags`,
-    rfWarning:  n => `⚠️ ${n} red flags detectados`,
-    actionTech: '🎯 Certificaciones técnicas urgentes',
-    actionComm: '🎯 Desarrollar pipeline Enterprise',
-    actionTeam: '🎯 Fortalecer equipo dedicado'
+    }
   },
 
   en: {
@@ -429,13 +417,13 @@ const LANG = {
     mandatoryCommentsText:    'Score ≤ 2 and N/A on key questions. Minimum 15 characters of real context.',
     resultsTitle:             'Classification',
     blockScoresTitle:         'Score by block',
-    actionPlanTitle:          'Action Plan',
     footerLabelTotal:         'Score:',
     footerLabelType:          'Type:',
     footerRFLabel:            'flags',
     btnClearText:             'Clear',
     weightLabel:              'Weight',
     confirmClear:             'Are you sure you want to clear everything?',
+    printBlockedMsg:          'Direct printing is disabled. Use the "PDF" button to generate the official document.',
     alertNoData:              'Please fill in Partner Name and Salesperson first.',
     alertNoResponses:         'Please answer at least one question first.',
     pdfGenerated:             'Generated:',
@@ -444,7 +432,6 @@ const LANG = {
     pdfLabelCategory:         'Category',
     pdfLabelSubcat:           'Subcategory',
     pdfLabelRF:               'Red Flags',
-    pdfActionTitle:           'Action Plan',
     pdfDetailedTitle:         'Detailed Responses',
     pdfWeightTitle:           'Weight Distribution — Reference for PM and Team Leader',
     pdfWeightSubtitle:        'A higher weight means that area has more impact on the partner\'s final classification.',
@@ -465,6 +452,9 @@ const LANG = {
     blockerMissingMeta:       'Missing partner name or salesperson',
     blockerNoScore:           'Answer at least one question',
     blockerUnanswered:        n => `${n} unanswered question(s)`,
+    blockerUnansweredList:    'Unanswered questions:',
+    blockerPendingList:       'Incomplete comments (min. 15 characters):',
+    blockerFillerList:        'Filler-text comments:',
     blockerPending:           n => `${n} incomplete comment(s) — min. 15 characters`,
     blockerFiller:            n => `${n} filler comment(s)`,
     progressLabel:            (a,t) => `${a} / ${t} answered`,
@@ -480,27 +470,7 @@ const LANG = {
       Vertical:'Vertical-Focused', Expanding:'Expanding', Broad:'Broad-Based',
       Emerging:'Emerging', AtRisk:'At-Risk', Transactional:'Transactional',
       EndUser:'End-User', Community:'Community-Focused', Inactive:'Inactive', Dormant:'Dormant'
-    },
-    actionPlans: {
-      'Strategic-Flagship':    ['Invite to elite partner program','Co-create success stories and testimonials','Early access to new features','Invite as speakers at Odoo events'],
-      'Strategic-Established': ['Close PM relationship','Prioritize active co-selling','Joint advanced webinars','Support vertical expansion'],
-      'Strategic-Transforming':['30-60-90 plan with dedicated PM','Best practices enablement','Connect with top-performing partners','Quarterly KPI review'],
-      'Growth-Vertical':       ['Vertical-specific marketing materials','Odoo.com industry listings','Introductions to vertical-fit clients','Invite to Partner Day'],
-      'Growth-Expanding':      ['Discounted Success Packs','Certification support','Monthly pipeline check-in','Team enablement sessions'],
-      'Growth-Broad':          ['Define strategic focus','Identify most promising vertical','6-month specialization plan','Pipeline review'],
-      'Active-Emerging':       ['Intensive onboarding','Assign experienced buddy partner','90-day milestones','Weekly check-in for first 4 weeks'],
-      'Active-Transactional':  ['Assess model sustainability','Formalize commercial processes','Methodology training','Re-qualification in 60 days'],
-      'Active-AtRisk':         ['Urgent PM intervention','Full partner health-check','30-60 day recovery plan','Reclassify if no improvement'],
-      'LowFit-EndUser':        ['Close as direct end-customer','Refer to Direct Sales','Redirect to Odoo Success','Remove from active roster'],
-      'LowFit-Community':      ['Educational emails on Enterprise','Comparison webinar','2 re-engagement attempts','Archive if no response'],
-      'LowFit-Inactive':       ['Last reactivation campaign','"What could we do better?" survey','Mark as Dormant','Passive nurturing'],
-      'LowFit-Dormant':        ['Quarterly news email','General newsletters','Passive monitoring','Evaluate future reactivation']
-    },
-    rfCritical: n => `⚠️ CRITICAL: ${n} red flags`,
-    rfWarning:  n => `⚠️ ${n} red flags detected`,
-    actionTech: '🎯 Urgent technical certifications needed',
-    actionComm: '🎯 Develop Enterprise pipeline',
-    actionTeam: '🎯 Strengthen dedicated team'
+    }
   },
 
   fr: {
@@ -526,7 +496,6 @@ const LANG = {
     mandatoryCommentsText:    'Score ≤ 2 et N/A sur les questions clés. Minimum 15 caractères de contexte réel.',
     resultsTitle:             'Classification',
     blockScoresTitle:         'Score par bloc',
-    actionPlanTitle:          'Plan d\'action',
     footerLabelTotal:         'Score :',
     labelScore:               'Score :',
     footerLabelType:          'Type :',
@@ -534,6 +503,7 @@ const LANG = {
     btnClearText:             'Effacer',
     weightLabel:              'Poids',
     confirmClear:             'Êtes-vous sûr de vouloir tout effacer ?',
+    printBlockedMsg:          'L\'impression directe est désactivée. Utilisez le bouton « PDF » pour générer le document officiel.',
     alertNoData:              'Veuillez renseigner le nom du partenaire et du responsable commercial.',
     alertNoResponses:         'Veuillez répondre à au moins une question.',
     pdfGenerated:             'Généré le :',
@@ -543,7 +513,6 @@ const LANG = {
     pdfLabelSubcat:           'Sous-catégorie',
     pdfLabelRF:               'Alertes critiques',
     pdfLabelScore:            'Score total',
-    pdfActionTitle:           'Plan d\'action',
     pdfDetailedTitle:         'Réponses détaillées',
     pdfWeightTitle:           'Répartition des pondérations — Référence PM et Team Leader',
     pdfWeightSubtitle:        'Une pondération plus élevée signifie que ce domaine a davantage d\'impact sur la classification finale du partenaire.',
@@ -564,6 +533,9 @@ const LANG = {
     blockerMissingMeta:       'Nom du partenaire ou responsable commercial manquant',
     blockerNoScore:           'Répondez à au moins une question',
     blockerUnanswered:        n => `${n} question(s) sans réponse`,
+    blockerUnansweredList:    'Questions sans réponse :',
+    blockerPendingList:       'Commentaires incomplets (min. 15 caractères) :',
+    blockerFillerList:        'Commentaires de remplissage :',
     blockerPending:           n => `${n} commentaire(s) incomplet(s) — min. 15 caractères`,
     blockerFiller:            n => `${n} commentaire(s) de remplissage`,
     progressLabel:            (a,t) => `${a} / ${t} répondues`,
@@ -579,27 +551,7 @@ const LANG = {
       Vertical:'Spécialisation sectorielle', Expanding:'En expansion', Broad:'Base large',
       Emerging:'Émergent', AtRisk:'À risque', Transactional:'Transactionnel',
       EndUser:'Utilisateur final', Community:'Axé Community', Inactive:'Inactif', Dormant:'Dormant'
-    },
-    actionPlans: {
-      'Strategic-Flagship':    ['Inviter au programme élite partenaires','Co-créer des études de cas et témoignages','Accès anticipé aux nouvelles fonctionnalités','Inviter comme conférenciers aux événements Odoo'],
-      'Strategic-Established': ['Relation étroite avec PM dédié','Prioriser la co-vente active','Webinaires avancés conjoints','Accompagner l\'expansion sectorielle'],
-      'Strategic-Transforming':['Plan 30-60-90 avec PM dédié','Partage des meilleures pratiques','Mise en relation avec des partenaires performants','Revue trimestrielle des KPIs'],
-      'Growth-Vertical':       ['Contenus marketing par secteur','Référencement sur Odoo.com par industrie','Mise en relation avec des clients du secteur','Inviter au Partner Day'],
-      'Growth-Expanding':      ['Success Packs à tarif réduit','Accompagnement aux certifications','Suivi mensuel du pipeline','Sessions de formation pour l\'équipe'],
-      'Growth-Broad':          ['Définir un axe stratégique','Identifier le secteur le plus porteur','Plan de spécialisation sur 6 mois','Revue du pipeline'],
-      'Active-Emerging':       ['Onboarding intensif','Attribuer un partenaire mentor expérimenté','Jalons à 90 jours','Point hebdomadaire les 4 premières semaines'],
-      'Active-Transactional':  ['Évaluer la viabilité du modèle','Formaliser les processus commerciaux','Formation aux méthodologies','Re-qualification sous 60 jours'],
-      'Active-AtRisk':         ['Intervention urgente du PM','Audit complet de santé partenaire','Plan de redressement 30-60 jours','Reclasser si pas d\'amélioration'],
-      'LowFit-EndUser':        ['Traiter comme client direct','Orienter vers Direct Sales','Rediriger vers Odoo Success','Retirer du roster actif'],
-      'LowFit-Community':      ['E-mails éducatifs sur Enterprise','Webinaire comparatif','2 tentatives de réengagement','Archiver sans réponse'],
-      'LowFit-Inactive':       ['Dernière campagne de réactivation','Enquête : "Que pourrions-nous améliorer ?"','Marquer comme Dormant','Nurturing passif'],
-      'LowFit-Dormant':        ['E-mail trimestriel d\'actualités','Newsletters générales','Surveillance passive','Évaluer une réactivation future']
-    },
-    rfCritical: n => `⚠️ CRITIQUE : ${n} alertes critiques`,
-    rfWarning:  n => `⚠️ ${n} alertes détectées`,
-    actionTech: '🎯 Certifications techniques urgentes',
-    actionComm: '🎯 Développer le pipeline Enterprise',
-    actionTeam: '🎯 Renforcer l\'équipe dédiée'
+    }
   }
 };
 
@@ -1102,13 +1054,16 @@ function validateComment(text) {
 }
 function getCommentIssues() {
   let pending=0,invalid=0;
+  const pendingList=[],invalidList=[];
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
     const sel=qDiv.querySelector('input[type="radio"]:checked');
     if(!sel||!isCommentRequired(qDiv,sel.value)) return;
     const s=validateComment((qDiv.querySelector('textarea')||{value:''}).value);
-    if(s==='short') pending++; else if(s==='filler') invalid++;
+    const entry={num:qDiv.dataset.qnum, qid:qDiv.dataset.qid, text:qDiv.querySelector('.question-text').textContent};
+    if(s==='short'){pending++;pendingList.push(entry);}
+    else if(s==='filler'){invalid++;invalidList.push(entry);}
   });
-  return {pending,invalid};
+  return {pending,invalid,pendingList,invalidList};
 }
 
 // ── AUTOSAVE ──────────────────────────────────────────────────────
@@ -1183,6 +1138,7 @@ function renderForm(savedData) {
       const qDiv=document.createElement('div'); qDiv.className='q-card';
       qDiv.dataset.role=q.r; qDiv.dataset.weight=q.w; qDiv.dataset.block=block;
       qDiv.dataset.qid=qId; qDiv.dataset.qtype=q.t; qDiv.dataset.naRequired=naReq?'true':'false';
+      qDiv.dataset.qnum=globalQIdx;
 
       const roleCls=q.r==='Recruiter'?'role-pill-recruiter':q.r==='PM'?'role-pill-pm':'role-pill-ambos';
       const rLabel=roleLabel(q.r);
@@ -1400,7 +1356,6 @@ function recalculate(){
   const category=cats[catKey]||catKey;
   const subcatKey=getSubcategory(totalScore,catKey,blockScores,redFlags);
   const subcatDisplay=(L('subcats')||{})[subcatKey]||subcatKey;
-  const planKey=`${catKey}-${subcatKey}`;
 
   document.getElementById('badgeType').textContent=answered?category:'—';
   document.getElementById('badgeSubcat').textContent=answered?subcatDisplay:'—';
@@ -1426,7 +1381,6 @@ function recalculate(){
         <span style="font-size:11px;font-weight:700;color:${color};min-width:28px;text-align:right">${s.toFixed(1)}</span>
       </div>`;
     });
-    generateStaticPlan(planKey,blockScores,redFlags);
   } else document.getElementById('resultsSummary').classList.add('hidden');
   updateExportState();
 }
@@ -1438,23 +1392,6 @@ function getSubcategory(score,catKey,bs,rf){
   if(catKey==='Growth'){if(C>=4.0)return 'Vertical';if(E>=3.5&&C>=3.5)return 'Expanding';return 'Broad';}
   if(catKey==='Active'){if(score>=3.3&&K>=3.0)return 'Emerging';if(rf>=3||R<2.5)return 'AtRisk';return 'Transactional';}
   if(P<2.0)return 'EndUser';if(D<2.0)return 'Community';if(K<1.5)return 'Inactive';return 'Dormant';
-}
-
-function generateStaticPlan(planKey,blockScores,redFlags){
-  const plans=(LANG[currentLang]||LANG.es).actionPlans;
-  const actions=[...(plans[planKey]||[])];
-  if(redFlags>=5) actions.push(Lfn('rfCritical',redFlags));
-  else if(redFlags>=3) actions.push(Lfn('rfWarning',redFlags));
-  if((blockScores['Técnicas']||0)<2.5) actions.push(L('actionTech'));
-  if((blockScores['Comerciales']||0)<2.5) actions.push(L('actionComm'));
-  if((blockScores['Estructura & Equipo']||0)<3.0) actions.push(L('actionTeam'));
-  const list=document.getElementById('actionPlanList'); list.innerHTML='';
-  actions.slice(0,6).forEach(a=>{
-    const d=document.createElement('div');
-    d.className='text-xs bg-white/10 px-2.5 py-1.5 rounded-lg flex items-start gap-2';
-    d.innerHTML=`<span class="opacity-50 flex-shrink-0 mt-0.5">•</span><span>${a}</span>`;
-    list.appendChild(d);
-  });
 }
 
 // ── FILTERS ───────────────────────────────────────────────────────
@@ -1493,7 +1430,6 @@ function updateStaticUI(){
   set('mandatoryCommentsText',  L('mandatoryCommentsText'));
   set('resultsTitle',      L('resultsTitle'));
   set('blockScoresTitle',  L('blockScoresTitle'));
-  set('actionPlanTitle',   L('actionPlanTitle'));
   set('footerLabelTotal',  L('footerLabelTotal'));
   set('footerLabelType',   L('footerLabelType'));
   set('footerRFLabel',     L('footerRFLabel'));
@@ -1511,6 +1447,8 @@ function updateStaticUI(){
   set('pdfWeightTitle',    L('pdfWeightTitle'));
   set('pdfWeightSubtitle', L('pdfWeightSubtitle'));
   set('langText',          currentLang.toUpperCase());
+  const toastEl=document.getElementById('printBlockToast');
+  if(toastEl && !toastEl.classList.contains('hidden')) toastEl.textContent='🚫 '+L('printBlockedMsg');
 }
 
 // ── EXPORT STATE ──────────────────────────────────────────────────
@@ -1519,18 +1457,24 @@ function updateExportState(){
   const partner=document.getElementById('partnerName').value.trim();
   const pm=document.getElementById('partnerManager').value.trim();
   const issues=getCommentIssues();
-  const mode=document.getElementById('roleMode').value;
-  // Bug fix #3: count ALL visible questions regardless of role filter for unanswered check
+  // Count ALL visible questions regardless of role filter; track exact question numbers
   let unanswered=0;
+  const pendingQuestions=[]; // {num, qid, text}
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
-    if(!qDiv.querySelector('input[type="radio"]:checked')) unanswered++;
+    if(!qDiv.querySelector('input[type="radio"]:checked')){
+      unanswered++;
+      const num=qDiv.dataset.qnum;
+      const text=qDiv.querySelector('.question-text').textContent;
+      pendingQuestions.push({num, qid:qDiv.dataset.qid, text});
+    }
   });
   const noScore=score==='—',noMeta=!partner||!pm;
   const blocked=issues.pending+issues.invalid+unanswered+(noMeta?1:0)+(noScore?1:0)>0;
   document.getElementById('btnPDF').classList.toggle('btn-locked',blocked);
   document.getElementById('btnXLSX').classList.toggle('btn-locked',blocked);
-  document.getElementById('exportBlockerBanner').classList.toggle('hidden',!blocked);
+      document.getElementById('exportBlockerBanner').classList.toggle('hidden',!blocked);
   document.getElementById('footerBlockMsg').classList.toggle('hidden',!blocked);
+  const detailEl=document.getElementById('blockerDetail');
   if(blocked){
     const parts=[];
     if(noMeta) parts.push(L('blockerMissingMeta'));
@@ -1538,9 +1482,62 @@ function updateExportState(){
     if(unanswered>0) parts.push(Lfn('blockerUnanswered',unanswered));
     if(issues.pending>0) parts.push(Lfn('blockerPending',issues.pending));
     if(issues.invalid>0) parts.push(Lfn('blockerFiller',issues.invalid));
-    const msg=parts.join(' · ');
-    document.getElementById('blockerDetail').textContent=msg;
-    document.getElementById('footerBlockMsg').textContent=`⚠️ ${msg}`;
+    const summaryMsg=parts.join(' · ');
+    document.getElementById('footerBlockMsg').textContent=`⚠️ ${summaryMsg}`;
+
+    // Build detailed clickable list of exact pending questions and comment issues
+    detailEl.innerHTML='';
+    const summaryP=document.createElement('p');
+    summaryP.textContent=summaryMsg;
+    detailEl.appendChild(summaryP);
+
+    function appendJumpList(titleKey, entries){
+      if(entries.length===0) return;
+      const t=document.createElement('p');
+      t.className='font-bold mt-2 mb-1';
+      t.textContent=L(titleKey);
+      detailEl.appendChild(t);
+      const ul=document.createElement('ul');
+      ul.className='list-none space-y-1';
+      entries.forEach(e=>{
+        const li=document.createElement('li');
+        const btn=document.createElement('button');
+        btn.type='button';
+        btn.className='text-amber-800 hover:text-amber-950 underline text-left';
+        btn.dataset.jumpQid=e.qid;
+        btn.textContent=`#${e.num} — ${e.text}`; // textContent avoids HTML injection from question text
+        li.appendChild(btn);
+        ul.appendChild(li);
+      });
+      detailEl.appendChild(ul);
+    }
+    appendJumpList('blockerUnansweredList', pendingQuestions);
+    appendJumpList('blockerPendingList', issues.pendingList);
+    appendJumpList('blockerFillerList', issues.invalidList);
+
+    detailEl.querySelectorAll('[data-jump-qid]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        let target=document.querySelector(`[data-qid="${btn.dataset.jumpQid}"]`);
+        if(!target) return;
+        // If the question is hidden by the active search filter, clear the search so it becomes visible
+        if(target.classList.contains('hidden')){
+          const sb=document.getElementById('searchBox');
+          if(sb.value){ sb.value=''; applyFilters(); recalculate(); }
+          target=document.querySelector(`[data-qid="${btn.dataset.jumpQid}"]`);
+        }
+        if(!target || target.classList.contains('hidden')) return; // still hidden (e.g. role filter) — nothing more we can safely do
+        const body=target.closest('.block-body');
+        if(body && body.style.maxHeight==='0px'){
+          body.style.maxHeight=(body.scrollHeight+200)+'px';
+          const icon=body.previousElementSibling && body.previousElementSibling.querySelector('.toggle-icon');
+          if(icon) icon.textContent='▲';
+        }
+        target.scrollIntoView({behavior:'smooth',block:'center'});
+        target.style.transition='box-shadow .3s';
+        target.style.boxShadow='0 0 0 3px rgba(239,68,68,.5)';
+        setTimeout(()=>{target.style.boxShadow='';},1600);
+      });
+    });
   }
 }
 
@@ -1588,19 +1585,8 @@ document.getElementById('btnPDF').addEventListener('click',()=>{
   if(!partner||!pm){alert(L('alertNoData'));return;}
   const totalScore=document.getElementById('footerScore').textContent;
   if(totalScore==='—'){alert(L('alertNoResponses'));return;}
-  const locale=currentLang==='fr'?'fr-FR':currentLang==='en'?'en-US':'es-ES';
-  document.getElementById('pdfDate').textContent=new Date().toLocaleString(locale);
-  document.getElementById('pdfPartner').textContent=partner;
-  document.getElementById('pdfPM').textContent=pm;
-  document.getElementById('pdfScore').textContent=totalScore;
-  document.getElementById('pdfType').textContent=document.getElementById('footerType').textContent;
-  document.getElementById('pdfSubcat').textContent=document.getElementById('displaySubcategory').textContent;
-  document.getElementById('pdfRF').textContent=document.getElementById('footerRF').textContent;
-  const apItems=document.getElementById('actionPlanList').querySelectorAll('span:last-child');
-  const pdfAP=document.getElementById('pdfActionPlan'); pdfAP.innerHTML='';
-  apItems.forEach(item=>{const p=document.createElement('p');p.style.margin='2px 0';p.textContent='• '+item.textContent;pdfAP.appendChild(p);});
-  const th=L('pdfTableHeaders');
-  document.getElementById('pdfTableHead').innerHTML=th.map(h=>`<th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:left">${h}</th>`).join('');
+
+  // Build response rows FIRST, validate hasData BEFORE touching pdfArea visibility
   const tbody=document.getElementById('pdfBody'); tbody.innerHTML='';
   let hasData=false;
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
@@ -1619,9 +1605,40 @@ document.getElementById('btnPDF').addEventListener('click',()=>{
     tbody.appendChild(row);
   });
   if(!hasData){alert(L('alertNoResponses'));return;}
+
+  // Now safe to populate everything else and show the PDF area
+  const locale=currentLang==='fr'?'fr-FR':currentLang==='en'?'en-US':'es-ES';
+  document.getElementById('pdfDate').textContent=new Date().toLocaleString(locale);
+  document.getElementById('pdfPartner').textContent=partner;
+  document.getElementById('pdfPM').textContent=pm;
+  document.getElementById('pdfScore').textContent=totalScore;
+  document.getElementById('pdfType').textContent=document.getElementById('footerType').textContent;
+  document.getElementById('pdfSubcat').textContent=document.getElementById('displaySubcategory').textContent;
+  document.getElementById('pdfRF').textContent=document.getElementById('footerRF').textContent;
+  const th=L('pdfTableHeaders');
+  document.getElementById('pdfTableHead').innerHTML=th.map(h=>`<th style="padding:6px 7px;border:1px solid #9a6b8a;text-align:left">${h}</th>`).join('');
+
+  // Rebuild all translated PDF static labels in current language before export
   document.getElementById('pdfWeightSummary').innerHTML=buildWeightSummaryHTML();
-  const src=document.getElementById('pdfArea'); src.classList.remove('hidden');
-  html2pdf().set({margin:7,filename:`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`,html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(src).save().then(()=>src.classList.add('hidden'));
+  document.getElementById('pdfDetailedTitle').textContent=L('pdfDetailedTitle');
+  document.getElementById('pdfWeightTitle').textContent=L('pdfWeightTitle');
+  document.getElementById('pdfWeightSubtitle').textContent=L('pdfWeightSubtitle');
+  document.getElementById('pdfLabelCategory').textContent=L('pdfLabelCategory');
+  document.getElementById('pdfLabelSubcat').textContent=L('pdfLabelSubcat');
+  document.getElementById('pdfLabelRF').textContent=L('pdfLabelRF');
+  document.getElementById('pdfLabelPartner').textContent=L('pdfLabelPartner');
+  document.getElementById('pdfLabelSalesperson').textContent=L('pdfLabelSalesperson');
+  document.getElementById('pdfLabelScore').textContent=L('pdfLabelScore');
+  document.getElementById('pdfGenerated').textContent=L('pdfGenerated');
+
+  const src=document.getElementById('pdfArea');
+  src.classList.remove('hidden');
+  isExportingPDF=true;
+  setTimeout(()=>{ isExportingPDF=false; }, 15000); // safety net in case .then/.catch never fire
+  html2pdf().set({margin:7,filename:`Qualification_${partner.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`,html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}})
+    .from(src).save()
+    .then(()=>{src.classList.add('hidden'); isExportingPDF=false;})
+    .catch(err=>{ console.error('PDF export failed:',err); alert(currentLang==='fr'?'Erreur lors de la génération du PDF. Veuillez réessayer.':currentLang==='en'?'PDF generation failed. Please try again.':'Error al generar el PDF. Intenta de nuevo.'); src.classList.add('hidden'); isExportingPDF=false; });
 });
 
 // ── EXCEL EXPORT ──────────────────────────────────────────────────
@@ -1635,9 +1652,7 @@ document.getElementById('btnXLSX').addEventListener('click',()=>{
      [L('pdfLabelCategory'),document.getElementById('footerType').textContent],
      [L('pdfLabelSubcat'),document.getElementById('displaySubcategory').textContent],
      ['Red Flags',document.getElementById('footerRF').textContent],
-     ['Date',new Date().toLocaleString()],[''],
-     [L('pdfActionTitle')+':']];
-  document.getElementById('actionPlanList').querySelectorAll('span:last-child').forEach(a=>summary.push(['• ',a.textContent]));
+     ['Date',new Date().toLocaleString()]];
   const rh=L('pdfTableHeaders');
   const rows=[rh];
   document.querySelectorAll('[data-qid]:not(.hidden)').forEach(qDiv=>{
@@ -1685,6 +1700,43 @@ document.getElementById('searchBox').addEventListener('input',applyFilters);
 document.getElementById('partnerName').addEventListener('input',()=>{scheduleAutosave();updateExportState();});
 document.getElementById('partnerManager').addEventListener('input',()=>{scheduleAutosave();updateExportState();});
 
+// ── PRINT PROTECTION (3 layers) ──────────────────────────────────
+let printToastTimer=null;
+let isExportingPDF=false; // suppress false-positive print warnings during legitimate PDF export
+function showPrintBlockToast(){
+  if(isExportingPDF) return; // don't warn the user during their own legitimate export
+  const toast=document.getElementById('printBlockToast');
+  toast.textContent='🚫 '+L('printBlockedMsg');
+  toast.classList.remove('hidden');
+  clearTimeout(printToastTimer);
+  printToastTimer=setTimeout(()=>toast.classList.add('hidden'),4000);
+}
+
+// Layer 1: intercept Ctrl+P / Cmd+P keyboard shortcut
+document.addEventListener('keydown', e=>{
+  const isPrintShortcut = (e.ctrlKey||e.metaKey) && (e.key==='p'||e.key==='P');
+  if(isPrintShortcut){
+    e.preventDefault();
+    e.stopPropagation();
+    showPrintBlockToast();
+  }
+});
+
+// Layer 2: block the browser context menu (right-click → Print, Save as, etc.)
+// but NOT inside text inputs/textareas, so copy/paste/cut still works normally for the team.
+document.addEventListener('contextmenu', e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  const isEditable = tag==='input' || tag==='textarea' || e.target.isContentEditable;
+  if(isEditable) return; // allow native context menu for copy/paste/cut inside fields
+  e.preventDefault();
+  showPrintBlockToast();
+});
+
+// Layer 3: if window.print() is somehow still triggered (devtools, browser menu, etc.),
+// the @media print CSS rule renders a blank/blocked page instead of the form content.
+// We also listen for the print events to show the toast as an extra signal.
+window.addEventListener('beforeprint', ()=>{ showPrintBlockToast(); });
+
 // ── INIT ──────────────────────────────────────────────────────────
 const initSaved=loadAutosave();
 if(initSaved&&initSaved.lang&&LANGS.includes(initSaved.lang)) currentLang=initSaved.lang;
@@ -1697,6 +1749,7 @@ updateStaticUI();
 renderForm(initSaved);
 applyFilters();
 recalculate();
+updateExportState();
 </script>
 </body>
 </html>
